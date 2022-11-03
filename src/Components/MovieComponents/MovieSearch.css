@@ -1,0 +1,45 @@
+.mListItem {
+  justify-content: space-between;
+}
+
+.search {
+  justify-content: space-around;
+  color: black;
+}
+
+.mListItemTitle {
+  margin-right: 0.25rem;
+}
+
+.moviePickList {
+  overflow: auto;
+  border-radius: 5px;
+  height: 150px;
+}
+
+.toast {
+  width: 15rem !important;
+  position: fixed;
+  bottom: 0;
+  z-index: 1;
+  left: 0;
+  margin-left: 5px;
+  margin-bottom: 5px;
+}
+
+.adminVote {
+  justify-content: right;
+}
+
+.movieSearchInput {
+  padding: 10px 24px 10px 24px;
+  height: 40px;
+  border: none;
+  font-size: 20px;
+  border-radius: 30px 30px 30px 30px;
+}
+
+.search-form{
+  padding-bottom: 5px;
+}
+

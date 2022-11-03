@@ -1,0 +1,55 @@
+.intro,
+.get-started {
+  text-align: center;
+}
+
+.intro {
+  background: linear-gradient(
+      rgba(255, 255, 255, 0.27),
+      rgba(247, 245, 245, 0.848)
+    ),
+    url("../../assets/movie-night.jpeg");
+  height: 50vh;
+  background-repeat: no-repeat;
+  border-radius: 30px;
+  color: black;
+  display: flex;
+  flex-direction: column;
+  background-size: cover;
+  background-position: 0px 20%;
+  margin: auto;
+}
+
+.intro-text {
+  margin: auto;
+  padding: 5px;
+  border-radius: 5px;
+  background-color: rgba(247, 245, 245, 0.651) !important;
+}
+
+.start-vote-button {
+  background-color: #540b0e !important;
+  border-color: #540b0e !important;
+  color: black !important;
+  font-size: 1.2rem !important;
+  color: white !important;
+  text-shadow: none;
+}
+
+.joinVoteButton:hover,
+.start-vote-button:hover {
+  background-color: #588157 !important;
+  border-color: #588157 !important;
+  color: white !important;
+  text-shadow: none;
+}
+
+.get-started {
+  margin: auto;
+  flex-direction: column;
+}
+
+h1{
+  font-size: calc(25px + (70 - 25) * ((100vw - 300px)/ (1600 - 300))) !important;
+}
+

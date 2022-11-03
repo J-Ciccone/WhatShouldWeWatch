@@ -1,0 +1,9 @@
+.lobbyName{
+    margin-bottom: 2vh;
+    color:white;
+    overflow-wrap: anywhere;
+}
+
+.toast{
+    color: #000000 !important;
+}

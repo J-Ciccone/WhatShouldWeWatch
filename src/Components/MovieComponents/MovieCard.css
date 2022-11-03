@@ -1,0 +1,25 @@
+.mCard-title-holder {
+  background-color: rgba(128, 128, 128, 0.298) !important;
+}
+
+.mCard-img {
+  height: 18rem !important;
+}
+
+.mCard-title,
+.mCard-text {
+  width: 12rem;
+  color: black;
+}
+
+.mCard-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.mCard-btn:hover {
+  background-color: #588157 !important;
+  border-color: #588157 !important ;
+}
+
