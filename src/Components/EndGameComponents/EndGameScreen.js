@@ -1,8 +1,9 @@
 import { Button } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { getUserId } from "../../Services/LobbyService";
-const EndGameScreen = ({ movies , lobbyData}) => {
-    const navigate = useNavigate();
+import "./EndGame.css";
+const EndGameScreen = ({ movies, lobbyData }) => {
+  const navigate = useNavigate();
 
   console.log(movies);
   let keys = Object.keys(movies);
@@ -13,24 +14,36 @@ const EndGameScreen = ({ movies , lobbyData}) => {
   });
 
   const winner = movies[keys[0]];
-
   const exitGame = async () => {
-    navigate(`/home`)
-    
+    navigate(`/home`);
   };
   return (
     <>
-      <div>
-        <h2 className="big my-5 text-align-center text-shadow">{`The Winner is...`}</h2>
-        <div
-          className="d-flex justify-content-center"
-          style={{ height: "50vh" }}
-        >
-          <img alt="winner" src={winner.image} />
+      <div
+        className="winner-img"
+        style={{
+          backgroundImage: `linear-gradient(#393e41, rgba(20, 20, 20, 0.579)),url(${winner.image})`,
+        }}
+      />
+      <div
+        className="row  justify-content-center text-align-center"
+        style={{ color: "black" }}
+      >
+        <div className="col-sm-2 mb-3 col-md-4 p-4 g-card winner-row">
+          <h2 className="">{`Let's Watch...`}</h2>
+          <div
+            style={{
+              height: "40vh",
+              background: `url(${winner.image}) center/contain no-repeat`,
+            }}
+          ></div>
+          <h2 className="mt-4 text-align-center">{`${winner.title}!`}</h2>
+          <div>
+            <Button className="btn-primary" onClick={() => exitGame()}>
+              Exit Lobby
+            </Button>
+          </div>
         </div>
-        <h1 className="mt-4 big text-align-center text-shadow">{`${winner.title}!`}</h1>
-        <div className="d-flex justify-content-center"><Button className="btn-secondary" onClick={()=>exitGame()}>Exit Lobby</Button></div>
-        
       </div>
     </>
   );

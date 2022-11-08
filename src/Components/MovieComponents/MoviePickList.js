@@ -14,6 +14,7 @@ import {
 import VALUES from "../../Values";
 
 const MoviePickList = () => {
+  const [showMoviePicks, setShowMoviePicks] = useState("");
   const movContext = useContext(MovieListContext);
   const userData = movContext.lobbyData.users[movContext.userId];
 
@@ -27,44 +28,83 @@ const MoviePickList = () => {
   };
 
   const startVoting = () => {
-    changeLobbyState(VALUES.VOTING);
+    const keys = Object.keys(movContext.lobbyData.movies);
+    if (keys.length >= 2) {
+      changeLobbyState(VALUES.VOTING);
+    }else{
+      movContext.setToastText("Lobbies Require 2 or More Movies to Proceed!")
+      movContext.setShowToast(true)
+    }
+  };
+
+  const handleShowPickList = () => {
+    showMoviePicks === "show-list" && setShowMoviePicks("");
+    showMoviePicks === "" && setShowMoviePicks("show-list");
   };
 
   return (
     <>
-      <div className="mt-3 moviePickList g-card">
-        <div>
-          <ListGroup as="ol" variant="flush">
+      {showMoviePicks === "show-list" && (
+        <Button
+          size="sm"
+          className="show-list-button"
+          onClick={() => handleShowPickList()}
+        >
+          <span className="material-symbols-outlined">arrow_back</span>
+        </Button>
+      )}
+      <div className={`mt-3 movie-pick-list p-5 g-card ${showMoviePicks}`}>
+        <Button
+          size="sm"
+          className="hide-list"
+          onClick={() => handleShowPickList()}
+        >
+          <span className="material-symbols-outlined">arrow_forward</span>
+        </Button>
+        <div >
+          <ListGroup
+            as="ol"
+            variant="flush"
+            style={{ backgroundColor: "#f5f5f5" }}
+          >
             {movContext.moviePickIDs.length > 0 ? (
               movContext.moviePickIDs.map((id) => (
-                <>
-                  <ListGroup.Item
-                    className="d-flex mListItem"
-                    key={id}
-                    as="li"
+                <ListGroup.Item className="d-flex list-item" key={id} as="li">
+                  <strong
+                    className="list-item-title"
                   >
-                    <div className="mListItemTitle">{`${movContext.lobbyData.movies[id].title} ${movContext.lobbyData.movies[id].description} `}</div>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => handleMovieListRemove(movContext.lobbyData.movies[id])}
-                    >
-                      Remove
-                    </Button>
-                  </ListGroup.Item>
-                </>
+                    {`${movContext.lobbyData.movies[id].title}`}
+
+                    <em>{`${movContext.lobbyData.movies[id].description} `}</em>
+                  </strong>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    className="btn-round "
+                    style={{ maxHeight: "32px" }}
+                    onClick={() =>
+                      handleMovieListRemove(movContext.lobbyData.movies[id])
+                    }
+                  >
+                    Remove
+                  </Button>
+                </ListGroup.Item>
               ))
             ) : (
-              <ListGroup.Item>
-                Your movie selections will appear here
+              <ListGroup.Item key={"000"} className="list-item">
+                Your movie picks will appear here
               </ListGroup.Item>
             )}
           </ListGroup>
         </div>
       </div>
-      <div className="mt-2 d-grid">
+      <div className={`mt-2 d-grid start-vote-btn ${showMoviePicks}`}>
         {userData["isAdmin"] && movContext.lobbyData.movies !== undefined && (
-          <Button size="sm isAdmin" onClick={() => startVoting()}>
+          <Button
+            size="sm"
+            onClick={() => startVoting()}
+            className={`sm isAdmin ${showMoviePicks}`}
+          >
             Start Vote
           </Button>
         )}

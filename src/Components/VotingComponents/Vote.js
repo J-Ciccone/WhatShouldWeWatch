@@ -6,23 +6,27 @@ import Toast from "react-bootstrap/Toast";
 import VALUES from "../../Values";
 import { changeLobbyState } from "../../Services/LobbyService";
 
-const Vote = ({ lobbyData }) => {
+const Vote = ({ lobbyData, userId }) => {
   const movieArr = Object.keys(lobbyData.movies);
+  const [showToast, setShowToast] = useState();
   const [voteData, setVoteData] = useState({
     votesCast: 0,
     showToast: false,
+    canVote: true,
   });
   const setShow = () => {
     setVoteData({ ...voteData, showToast: false });
   };
 
   return (
-    <>
-      <Row className="justify-content-center">
-        <div className="text-align-center g-card p-4" style={{color:"black"}}>
-          <h3 className="text-align-center">Time to vote!</h3>
+    <div className="row card-container">
+      <div className="pt-3 pb-5 px-5">
+        <h3 className="">Cast Your Votes!</h3>
+        <h4>
           Votes: <small>{`${lobbyData.totalVotes}`}</small>
-          <div className="text-align-center" style={{}}>
+        </h4>
+        {lobbyData.users[userId].isAdmin && (
+          <div>
             <Button
               className="btn-sm"
               onClick={() => changeLobbyState(VALUES.DONE)}
@@ -30,29 +34,39 @@ const Vote = ({ lobbyData }) => {
               End Vote
             </Button>
           </div>
-        </div>
-      </Row>
-      <Row className="justify-content-center">
+        )}
+      </div>
+
+      <div className="row d-flex justify-content-center text-align-center">
         {movieArr.length > 0 &&
           movieArr.map((key) => (
-            <VoteCard
-              key={key}
-              movieId={key}
-              movie={lobbyData.movies[`${key}`]}
-              lobbyData={lobbyData}
-              voteData={voteData}
-              setVoteData={setVoteData}
-            ></VoteCard>
+            <>
+              <div
+                className="col-6 col-sm-6 col-md-4 col-lg-4 col-xl-2 mb-4"
+                key={key}
+              >
+                <VoteCard
+                  movieId={key}
+                  movie={lobbyData.movies[`${key}`]}
+                  lobbyData={lobbyData}
+                  voteData={voteData}
+                  setShowToast={setShowToast}
+                  setVoteData={setVoteData}
+                ></VoteCard>
+              </div>
+            </>
           ))}
-        <Toast
-          onClose={() => setShow()}
-          show={voteData.showToast}
-          delay={3000}
-          autohide
-          className="toast"
-        ></Toast>
-      </Row>
-    </>
+      </div>
+      <Toast
+        onClose={() => setShow()}
+        show={voteData.showToast}
+        delay={3000}
+        autohide
+        className="toast"
+      >
+        <Toast.Body>You can only vote for one movie!</Toast.Body>
+      </Toast>
+    </div>
   );
 };
 

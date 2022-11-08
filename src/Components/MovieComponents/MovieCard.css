@@ -1,25 +1,77 @@
-.mCard-title-holder {
-  background-color: rgba(128, 128, 128, 0.298) !important;
+.movie-card {
+  position: relative !important;
 }
 
-.mCard-img {
-  height: 18rem !important;
+.card {
+  box-shadow: 0px 2px 8px rgba(37, 37, 37, 0.388);
+  border-radius: 0px !important;
+}
+.select {
+  color: white;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  opacity: 0;
+  transition: 0.5s ease;
+  background: #ff763bca;
+  padding-top: 50%;
 }
 
-.mCard-title,
-.mCard-text {
-  width: 12rem;
-  color: black;
+.voted {
+  color: white;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  opacity: 1;
+  transition: 0.5s ease;
+  background: #ff763bca;
+  padding-top: 50%;
 }
 
-.mCard-body {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+.vote {
+  color: white;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  width: 100%;
+  padding-left: auto;
+  opacity: 0;
+  transition: 0.5s ease;
+  background: #ff763bca;
+  padding-top: 50%;
+}
+.card-image {
+  position: relative;
 }
 
-.mCard-btn:hover {
-  background-color: #588157 !important;
-  border-color: #588157 !important ;
+.col:hover {
+  cursor: pointer;
 }
 
+.card:hover .select,
+.card:hover .vote {
+  opacity: 1;
+}
+
+.card-img-top {
+  border-radius: 0px !important;
+}
+
+.card-title {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.card:hover .card-title{
+  white-space: normal;
+}

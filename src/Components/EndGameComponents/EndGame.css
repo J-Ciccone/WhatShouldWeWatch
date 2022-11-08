@@ -1,0 +1,18 @@
+.winner-img{
+    position: absolute;
+    z-index: 0;
+    top:0;
+    bottom:0;
+    right: 0;
+    left: 0;
+    height: 100vh;
+    background-position: 50% 75% !important;
+    background-repeat: no-repeat !important;
+    background:  linear-gradient(#393e41, rgba(20, 20, 20, 0.912)) !;
+}
+
+.winner-row{
+    
+    z-index: 5 !important;
+    
+}

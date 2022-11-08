@@ -4,8 +4,10 @@ import MovieLobby from "../Components/MovieComponents/MovieLobby";
 import VALUES from "../Values";
 import Vote from "../Components/VotingComponents/Vote";
 import EndGameScreen from "../Components/EndGameComponents/EndGameScreen";
+import { useNavigate } from "react-router-dom";
 
 const PlayerLobbyPage = () => {
+  const navigate = useNavigate();
   const [lobbyData, setLobbyData] = useState({});
 
   const lobbyCode = localStorage.getItem("lobbyCode");
@@ -25,11 +27,16 @@ const PlayerLobbyPage = () => {
   }, []);
   return (
     <>
-      <div className="lobbyName text-align-center text-shadow big-text">
-        {lobbyData.lobbyName}
-      </div>
-      <h4 className="lobbyName text-align-center">{`Lobby Code: ${lobbyCode}`}</h4>
-      <div className="">
+      <div style={{ height: "100%" }}>
+        <div className="row justify-content-center text-align-center">
+          <div
+            className="l"
+            style={{ height: "200px", width: "200px", cursor: "pointer", zIndex: 9 }}
+            onClick={() => navigate(`/home`)}
+          ></div>
+          <h2>{`Lobby Code: ${lobbyCode}`}</h2>
+        </div>
+
         {lobbyData.stage === VALUES.PICKING && (
           <MovieLobby
             lobbyData={lobbyData}

@@ -8,25 +8,27 @@ import {
   incrementMovieAdded,
 } from "../../Services/LobbyService";
 
-const MovieCard = ({ movie, buttonText }) => {
+const MovieCard = ({ movie }) => {
   const movContext = useContext(MovieListContext);
   const handleSetMovieList = () => {
-    
+    console.log(movie.id);
     if (
       movContext.moviePickIDs.length >= movContext.lobbyData.numMovies &&
-      !movContext.moviePickList.includes(movie.id)
+      !movContext.moviePickIDs.includes(movie.id)
     ) {
-      movContext.setShow(true);
+      console.log(movie.id + "-0");
+      movContext.setShowToast(true);
       movContext.setToastText(
         `Whoops! You can only choose ${movContext.lobbyData.numMovies} movie(s). Try removing one!`
       );
     } else if (movContext.moviePickIDs.includes(movie.id)) {
-      movContext.setShow(true);
+      console.log(movie.id + "-1");
+      movContext.setShowToast(true);
       movContext.setToastText(
         "Whoops! Looks like you already added that movie!"
       );
     } else {
-      console.log(movContext.moviePickIDs)
+      console.log(movContext.moviePickIDs);
       handleMovieSelect(movie);
     }
   };
@@ -41,30 +43,26 @@ const MovieCard = ({ movie, buttonText }) => {
     }
     const moviePickIDArray = movContext.moviePickIDs;
     moviePickIDArray.push(movie.id);
-    movContext.setPickIDs(moviePickIDArray)
-    localStorage.setItem("entries",JSON.stringify(moviePickIDArray));
+    movContext.setPickIDs(moviePickIDArray);
+    localStorage.setItem("entries", JSON.stringify(moviePickIDArray));
   };
 
   return (
-    <Card className="m-2 p-0 mCard col-auto g-card mx-3">
-      <Card.Img className="mCard-img" variant="top" src={movie.image} />
-      <Card.Body className="mCard-body">
-        <div className="g-card mb-2 p-1 mCard-title-holder">
-          <Card.Title className="mCard-title">{movie.title}</Card.Title>
-          <Card.Text className="mCard-text">{movie.description}</Card.Text>
-        </div>
+    <>
+      <div className="col h-100" onClick={() => handleSetMovieList()}>
+        <div className="card h-100">
+          <div className="card-image h-75">
+            <img className="card-img-top h-100" src={movie.image} alt="card top" />
+            <h4 className="select">Select</h4>
+          </div>
 
-        <div className="d-grid">
-          <Button
-            className="mCard-btn"
-            variant="secondary"
-            onClick={() => handleSetMovieList()}
-          >
-            {buttonText}
-          </Button>
+          <div className="card-body">
+            <div className="card-title" style={{fontSize: "1.2rem"}}><strong>{movie.title}</strong></div>
+            <p className="card-text"><strong><em>{movie.description}</em></strong></p>
+          </div>
         </div>
-      </Card.Body>
-    </Card>
+      </div>
+    </>
   );
 };
 

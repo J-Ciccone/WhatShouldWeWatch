@@ -14,17 +14,18 @@ code {
 .appContainer {
   height: 100vh;
   overflow: auto;
-  background-color: #edede9;
-  font-family: "Oswald";
-  background: radial-gradient(ellipse at bottom, #9b2226 0%, #1a140f 100%);
+  font-family: "Fjalla One";
+  background-color: #393e41;
+  color: #e5e6db;
 }
 
 .btn-primary {
   color: white !important;
-  background-color: #588157 !important;
-  outline-color: #588157 !important;
-  border-color: #588157 !important;
-  text-shadow: #000000 1px 2px 5px;
+  background-color: #ff753b !important;
+  outline-color: #ff753b !important;
+  border-color: #ff753b !important;
+  text-shadow: #000000 1px 2px 10px !important;
+  border-radius: 30px 30px 30px 30px !important;
 }
 
 .btn-secondary {
@@ -32,7 +33,8 @@ code {
   background-color: #540b0e !important;
   outline-color: #540b0e !important;
   border-color: #540b0e !important;
-  text-shadow: #000000 1px 2px 5px;
+  text-shadow: #000000 1px 2px 3px;
+  border-radius: 30px 30px 30px 30px !important;
 }
 
 .btn-round {
@@ -44,8 +46,9 @@ code {
   background-color: #231410 !important;
   outline-color: #231410 !important;
   border-color: #231410 !important;
-  text-shadow: #000000 1px 2px 5px;
+  text-shadow: #000000 1px 2px 3px;
   font-size: 15px !important;
+  border-radius: 30px 30px 30px 30px !important;
 }
 
 .text-align-center {
@@ -53,7 +56,7 @@ code {
 }
 
 .text-shadow {
-  text-shadow: #000000 1px 5px 30px;
+  text-shadow: #000000 1px 2px 3px;
 }
 
 .btn-small {
@@ -61,29 +64,34 @@ code {
   font-size: 0.7rem !important;
 }
 
-.big-text{
-  font-size: 7vh;
-}
-
-@media only screen and (max-height: 900px) {
-  .big-text {
-    font-size: 4rem;
-  }
-}
-
 .g-card {
   border-radius: 5px;
-  background-color: whitesmoke ;
-  box-shadow:#000000 1px 1px 25px; 
+  background-color: #e5e6db;
+  box-shadow: #0000008a 1px 1px 25px;
 }
 
 
-.s{
-  background-color: rgba(241, 241, 241, 0.387) !important;
-  padding-bottom: 10px;
-  color: white;
+.img1 {
+  background: linear-gradient(rgba(20, 20, 20, 0.1), rgba(20, 20, 20, 0.1))
+      top/cover no-repeat,
+    url("./assets/cutePuppy.png") top no-repeat;
+  height: 75vh;
+  position: relative;
 }
 
-h1{
-  font-size: calc(25px + (70 - 25) * ((100vw - 300px)/ (1600 - 300))) !important;
+.card-container {
+  margin-top: 30px;
+  box-shadow: 1px 2px 15px 3px #00000044;
+  background: #e5e6db;
+  border-radius: 15px;
+  justify-content: center;
+  width: 90vw;
+  margin-inline: auto !important;
+  padding-top: 50px !important;
+  padding: 20px;
+  color: black !important;
+}
+
+.l {
+  background: url('./assets/tempLogo.png')
 }

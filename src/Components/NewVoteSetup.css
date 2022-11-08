@@ -1,11 +1,14 @@
 .setup {
-  /* margin: auto; */
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  position: fixed;
+  justify-content: center;
+  align-items: center;
+  color: black !important;
+  margin-block: auto;
+  height: 100%;
 }
 
-.setup-form {
-    padding:10px;
+@media only screen and (max-width: 300px) {
+  .lobby-start-form {
+    padding-inline: 5px !important;
+  }
+  
 }

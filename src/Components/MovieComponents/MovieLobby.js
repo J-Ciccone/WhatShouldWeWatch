@@ -11,49 +11,43 @@ const MovieLobby = ({ lobbyData, userId, lobbyCode }) => {
   const [movieSearchResults, setMovieSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [moviePickIDs, setPickIDs] = useState([]);
-  const [show, setShow] = useState(false);
+  const [showToast, setShowToast] = useState(false);
   const [toastText, setToastText] = useState("");
 
-
-  useEffect(()=>{
-    const localMovieList = localStorage.getItem("entries")
-    localMovieList && setPickIDs(JSON.parse(localMovieList))
-  
-  },[])
+  useEffect(() => {
+    const localMovieList = localStorage.getItem("entries");
+    localMovieList && setPickIDs(JSON.parse(localMovieList));
+  }, []);
 
   return (
     <>
-      <Container className="s g-card">
-        <MovieListContext.Provider
-          value={{
-            setPickIDs,
-            lobbyData,
-            moviePickIDs,
-            setShow,
-            setToastText,
-            userId,
-            lobbyCode,
-          }}
-        >
-          <Row className=" p-3">
-            <MovieSearch
-              setLoading={setLoading}
-              setMovieSearchResults={setMovieSearchResults}
-              toastText={toastText}
-              lobbyData={lobbyData}
-            ></MovieSearch>
-          </Row>
-          <Row style={{ marginTop:"10px"}}>
-            <MovieSearchList
-              movieSearchResults={movieSearchResults}
-              loading={loading}
-            ></MovieSearchList>
-          </Row>
-        </MovieListContext.Provider>
-      </Container>
+      <MovieListContext.Provider
+        value={{
+          setPickIDs,
+          lobbyData,
+          moviePickIDs,
+          setShowToast,
+          setToastText,
+          toastText,
+          userId,
+          lobbyCode,
+        }}
+      >
+        
+          <MovieSearch
+            setLoading={setLoading}
+            setMovieSearchResults={setMovieSearchResults}
+            lobbyData={lobbyData}
+          ></MovieSearch>
+       
+          <MovieSearchList
+            movieSearchResults={movieSearchResults}
+            loading={loading}
+          ></MovieSearchList>
+      </MovieListContext.Provider>
       <Toast
-        onClose={() => setShow(false)}
-        show={show}
+        onClose={() => setShowToast(false)}
+        show={showToast}
         delay={3000}
         autohide
         className="toast"

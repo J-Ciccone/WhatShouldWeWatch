@@ -10,7 +10,7 @@ export const getRandom = async (num) => {
         n: 1,
         length: num,
         characters:
-          "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+          "abcdefghijklmnpqrstuvwxyzABCDEFGHIJKLMNPQRSTUVWXYZ123456789",
         replacement: true,
         pregeneratedRandomization: null,
       },

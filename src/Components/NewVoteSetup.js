@@ -10,62 +10,77 @@ const NewVoteSetup = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState();
   const [lobbyData, setLobbyData] = useState({
-    movieNum: 1,
+    movieNum: 2,
     lobbyName: "My Movie Vote",
+    unlimitedVotes: false,
   });
 
   const changeHandler = (e) => {
     setLobbyData({ ...lobbyData, [e.target.name]: e.target.value });
   };
 
+  const changeCheckHandler = (e) => {
+    setLobbyData({ ...lobbyData, [e.target.name]: e.target.checked });
+  };
+
   const startNewVote = async () => {
     setLoading(true);
+    localStorage.setItem("entries", []);
     const code = await getRandom(6);
     localStorage.setItem("lobbyCode", code);
-    await createNewLobby(code, lobbyData.movieNum, lobbyData.lobbyName);
-    navigate(`/lobby/lobby=${code}`);
+    createNewLobby(code, lobbyData.movieNum, lobbyData.unlimitedVotes).then(
+      () => {
+        navigate(`/lobby/${code}`);
+      }
+    );
   };
 
   return (
-    <div className="setup col-md-6 col-9">
-      <Form className="g-card setup-form">
-        <Form.Label htmlFor="voteLobbyName">
-          <h2>Lobby Name</h2>
-        </Form.Label>
-        <Form.Control
-          type="Text"
-          id="voteLobbyName"
-          name="lobbyName"
-          placeholder="Enter a name for your lobby"
-          className="mb-4"
-          onChange={changeHandler}
-        />
-        <Form.Select
-          aria-label="Set Movie Number"
-          name="movieNum"
-          onChange={changeHandler}
-        >
-          <option>Number of movies per person</option>
-          <option value={1}>One</option>
-          <option value={2}>Two</option>
-          <option value={3}>Three</option>
-          <option value={4}>Four</option>
-          <option value={5}>Five</option>
-        </Form.Select>
-        <div className="m-3">{lobbyData.movieNum} movie(s) per person</div>
+    <div className="setup row">
+      <div className="g-card p-5 lobby-start-form col-md-5 col-11">
+        <h2>Let's Get Started</h2>
+        <div>
+          <select
+            className="form-select mt-3"
+            aria-label="Default select example"
+            name="movieNum"
+            onChange={changeHandler}
+          >
+            <option>Number of movies per person</option>
+            <option value={2} defaultValue>
+              Two
+            </option>
+            <option value={3}>Three</option>
+            <option value={4}>Four</option>
+            <option value={5}>Five</option>
+          </select>
+        </div>
 
+        <div className="m-3">{lobbyData.movieNum} movie(s) per person</div>
+        <div className="form-check form-switch m-3">
+          <input
+            className="form-check-input"
+            type="checkbox"
+            role="switch"
+            name="unlimitedVotes"
+            id="flexSwitchCheckDefault"
+            onChange={changeCheckHandler}
+          />
+          <label className="form-check-label" htmlFor="flexSwitchCheckDefault">
+            Vote for more than one movie
+          </label>
+        </div>
         {!loading && (
           <Button className="m-2" onClick={() => startNewVote()}>
             Start Vote
           </Button>
         )}
-        <br></br>
         {loading && (
           <Spinner className="mt-3" animation="border" role="status">
             <span className="visually-hidden">Loading...</span>
           </Spinner>
         )}
-      </Form>
+      </div>
     </div>
   );
 };

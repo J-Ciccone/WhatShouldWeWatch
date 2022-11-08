@@ -1,45 +1,92 @@
-.mListItem {
-  justify-content: space-between;
-}
-
 .search {
   justify-content: space-around;
-  color: black;
 }
 
-.mListItemTitle {
-  margin-right: 0.25rem;
-}
-
-.moviePickList {
+.movie-pick-list {
   overflow: auto;
   border-radius: 5px;
-  height: 150px;
+  width: 350px;
+  opacity: 1;
+  transition: opacity 0.75s , display 0.5s;
+}
+
+@media only screen and (max-width: 350px) {
+  .movie-pick-list {
+    overflow: auto;
+    border-radius: 5px;
+    width: 80vw !important;
+    opacity: 1;
+    transition: opacity 0.75s , display 0.5s;
+  }
+
+  .movie-pick-list .list-item {
+    width: 100% !important;
+    display: block !important;
+  }
+}
+
+
+.list-item {
+  background-color: #e5e6db !important;
 }
 
 .toast {
   width: 15rem !important;
   position: fixed;
   bottom: 0;
-  z-index: 1;
+  z-index: 999;
   left: 0;
   margin-left: 5px;
   margin-bottom: 5px;
+  color: #000000 !important;
 }
 
 .adminVote {
   justify-content: right;
 }
 
-.movieSearchInput {
-  padding: 10px 24px 10px 24px;
-  height: 40px;
-  border: none;
-  font-size: 20px;
-  border-radius: 30px 30px 30px 30px;
-}
-
-.search-form{
+.search-form {
   padding-bottom: 5px;
 }
+
+.movie-picks {
+  position: absolute;
+  right: 18px;
+  z-index: 10;
+  bottom: 10px;
+}
+
+.hide-list, .show-list {
+  background-color: #e5e6db;
+  width: fit-content;
+  padding: 8px 5px 5px 5px;
+  position: absolute;
+  color: black;
+  cursor: pointer;
+  top: 0px;
+  left: 0px;
+}
+
+.show-list-button{
+  padding: 12px !important;
+  top: 13px;
+  left: auto;
+  right: 5px;
+  transition: opacity 0.75s , display 0.5s;
+}
+
+.start-vote-btn {
+  transition: all 0s;
+}
+
+.list-item-title {
+  max-width: 200px;
+  min-width: 200px;
+}
+
+.show-list{
+  display: none !important;
+  opacity: 0;
+}
+
 

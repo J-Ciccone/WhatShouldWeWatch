@@ -1,25 +1,36 @@
 import { database } from "../FirebaseAssets";
-import { ref, set, onValue, update, get, remove, increment } from "firebase/database";
+import {
+  ref,
+  set,
+  onValue,
+  update,
+  get,
+  remove,
+  increment,
+} from "firebase/database";
 import { getRandom } from "./NumberService";
 import VALUES from "../Values";
 
-export const createNewLobby = async (lobbyCode, numMovies, lobbyName) => {
+export const createNewLobby = async (lobbyCode, numMovies, unlimitedVotes) => {
   const db = database;
-  const userId = await getUserId();
-  await set(ref(db, "lobbies/" + lobbyCode), {
-    users: {
-      [userId]: {
-        isAdmin: true,
-        votes: 0,
-        donePicking: false,
-        movies: [],
+  getUserId().then((userId) => {
+    set(ref(db, "lobbies/" + lobbyCode), {
+      users: {
+        [userId]: {
+          isAdmin: true,
+          votes: 0,
+          donePicking: false,
+          movies: [],
+        },
       },
-    },
-    numMovies: numMovies,
-    movies: [],
-    stage: VALUES.PICKING,
-    lobbyName: lobbyName,
-    totalVotes: 0,
+      unlimitedVotes: unlimitedVotes,
+      numMovies: numMovies,
+      movies: [],
+      stage: VALUES.PICKING,
+      totalVotes: 0,
+    }).then(() => {
+      return true;
+    });
   });
 };
 
@@ -67,7 +78,7 @@ export const changeLobbyState = async (lobbyState) => {
 };
 
 export const addUserMovieToDB = async (movie) => {
-  const lobbyCode = localStorage.getItem("lobbyCode")
+  const lobbyCode = localStorage.getItem("lobbyCode");
   const movieObj = {
     title: movie.title,
     id: movie.id,
@@ -75,6 +86,7 @@ export const addUserMovieToDB = async (movie) => {
     description: movie.description,
     plot: movie.plot,
     added: 1,
+    votes: 0,
   };
   const db = database;
   const updates = {};
@@ -85,7 +97,7 @@ export const addUserMovieToDB = async (movie) => {
 };
 
 export const incrementMovieAdded = (movie) => {
-  const lobbyCode = localStorage.getItem("lobbyCode")
+  const lobbyCode = localStorage.getItem("lobbyCode");
   const db = database;
   const updates = {};
 
@@ -94,7 +106,7 @@ export const incrementMovieAdded = (movie) => {
   update(ref(db), updates);
 };
 
-export const decrementMovieAdded =  (movie) => {
+export const decrementMovieAdded = (movie) => {
   const db = database;
   const updates = {};
   const lobbyCode = localStorage.getItem("lobbyCode");
