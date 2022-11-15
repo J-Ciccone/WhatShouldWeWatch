@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { Col, Container, Row } from "react-bootstrap";
+import { useEffect } from "react";
 import Intro from "../Components/HomePageComponents/Intro";
 import { getRandom } from "../Services/NumberService";
 

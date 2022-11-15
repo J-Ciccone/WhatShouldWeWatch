@@ -24,7 +24,7 @@ const PlayerLobbyPage = () => {
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [lobbyCode, userId]);
   return (
     <>
       <div>
