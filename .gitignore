@@ -10,10 +10,10 @@
 
 # production
 /build
-/services/LobbyService.js
-/services/MovieService.js
-/services/NumberService.js
-/services/VoteService.js
+LobbyService.js
+MovieService.js
+NumberService.js
+VoteService.js
 
 
 # misc
