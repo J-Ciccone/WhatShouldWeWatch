@@ -2,10 +2,7 @@ import MovieSearch from "./MovieSearch";
 import { MovieListContext } from "../../Context";
 import MovieSearchList from "./MovieSearchList";
 import { useEffect, useState } from "react";
-import { getDatabase, ref, onValue } from "firebase/database";
-import { Container, Row } from "react-bootstrap";
 import Toast from "react-bootstrap/Toast";
-import "./MovieLobby.css";
 
 const MovieLobby = ({ lobbyData, userId, lobbyCode }) => {
   const [movieSearchResults, setMovieSearchResults] = useState([]);
@@ -17,6 +14,7 @@ const MovieLobby = ({ lobbyData, userId, lobbyCode }) => {
   useEffect(() => {
     const localMovieList = localStorage.getItem("entries");
     localMovieList && setPickIDs(JSON.parse(localMovieList));
+    
   }, []);
 
   return (

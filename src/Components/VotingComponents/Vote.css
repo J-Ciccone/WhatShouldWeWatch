@@ -1,0 +1,10 @@
+.vote-count {
+  margin-right: 60%;
+  
+}
+@media only screen and (max-width: 950px) {
+  .vote-count {
+    margin: 0px;
+    text-align: center;
+  }
+}

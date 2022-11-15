@@ -5,8 +5,9 @@ import { getRandom } from "../Services/NumberService";
 
 const HomePage = () => {
   useEffect(() => {
-    localStorage.getItem("user") === null &&
-      localStorage.setItem("user", getRandom(10));
+    localStorage.getItem("user") === null && 
+    getRandom(10).then((userId)=>localStorage.setItem("user",userId ))
+      
   }, []);
 
   return <Intro></Intro>;

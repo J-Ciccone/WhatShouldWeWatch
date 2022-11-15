@@ -1,13 +1,5 @@
 import { database } from "../FirebaseAssets";
-import {
-  ref,
-  set,
-  onValue,
-  update,
-  get,
-  remove,
-  increment,
-} from "firebase/database";
+import { ref, set, update, get, remove, increment } from "firebase/database";
 import { getRandom } from "./NumberService";
 import VALUES from "../Values";
 
@@ -18,7 +10,6 @@ export const createNewLobby = async (lobbyCode, numMovies, unlimitedVotes) => {
       users: {
         [userId]: {
           isAdmin: true,
-          votes: 0,
           donePicking: false,
           movies: [],
         },
@@ -42,13 +33,10 @@ export const addUserToLobby = async (lobbyCode) => {
   valid = get(lobbyRef)
     .then((snapshot) => {
       if (snapshot.exists()) {
-        console.log("User Found");
-        console.log(snapshot.val());
         const data = snapshot.val();
         console.log(data);
         if (data !== null) {
           if (data.users[userId] === undefined) {
-            console.log("Adding user to lobby");
             const userData = { isAdmin: false, votes: 0, donePicking: false };
             const updates = {};
             updates[`/lobbies/${lobbyCode}/users/${userId}`] = userData;
@@ -69,59 +57,15 @@ export const addUserToLobby = async (lobbyCode) => {
   return valid;
 };
 
-export const changeLobbyState = async (lobbyState) => {
+export const changeLobbyState = (lobbyState) => {
   const db = database;
   const lobbyCode = localStorage.getItem("lobbyCode");
   const updates = {};
   updates[`/lobbies/${lobbyCode}/stage`] = lobbyState;
-  await update(ref(db), updates);
-};
-
-export const addUserMovieToDB = async (movie) => {
-  const lobbyCode = localStorage.getItem("lobbyCode");
-  const movieObj = {
-    title: movie.title,
-    id: movie.id,
-    image: movie.image,
-    description: movie.description,
-    plot: movie.plot,
-    added: 1,
-    votes: 0,
-  };
-  const db = database;
-  const updates = {};
-
-  updates[`/lobbies/${lobbyCode}/movies/${movie.id}`] = movieObj;
-
-  await update(ref(db), updates);
-};
-
-export const incrementMovieAdded = (movie) => {
-  const lobbyCode = localStorage.getItem("lobbyCode");
-  const db = database;
-  const updates = {};
-
-  updates[`/lobbies/${lobbyCode}/movies/${movie.id}/added`] = increment(1);
-
   update(ref(db), updates);
 };
 
-export const decrementMovieAdded = (movie) => {
-  const db = database;
-  const updates = {};
-  const lobbyCode = localStorage.getItem("lobbyCode");
-  updates[`/lobbies/${lobbyCode}/movies/${movie.id}/added`] = increment(-1);
 
-  update(ref(db), updates);
-};
-
-export const removeUserMovieFromDB = async (lobbyCode, movie) => {
-  const db = database;
-
-  const movieRef = ref(db, `/lobbies/${lobbyCode}/movies/${movie.id}`);
-
-  await remove(movieRef);
-};
 
 export const getUserId = async () => {
   let userId;

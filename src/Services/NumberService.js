@@ -17,6 +17,7 @@ export const getRandom = async (num) => {
       id: 30084,
     }),
   };
+  
   const query = await fetch(
     `https://api.random.org/json-rpc/4/invoke`,
     requestOptions

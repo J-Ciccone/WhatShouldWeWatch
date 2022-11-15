@@ -27,13 +27,14 @@ const PlayerLobbyPage = () => {
   }, []);
   return (
     <>
-      <div style={{ height: "100%" }}>
+      <div>
         <div className="row justify-content-center text-align-center">
-          <div
-            className="l"
-            style={{ height: "200px", width: "200px", cursor: "pointer", zIndex: 9 }}
-            onClick={() => navigate(`/home`)}
-          ></div>
+          <div className="logo" onClick={() => navigate(`/home`)}>
+            <img
+              src={require("../assets/tempLogo.png")}
+              alt="logo"
+            />
+          </div>
           <h2>{`Lobby Code: ${lobbyCode}`}</h2>
         </div>
 

@@ -10,6 +10,11 @@
 
 # production
 /build
+/services/LobbyService.js
+/services/MovieService.js
+/services/NumberService.js
+/services/VoteService.js
+
 
 # misc
 .DS_Store

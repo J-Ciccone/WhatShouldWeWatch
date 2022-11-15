@@ -70,28 +70,20 @@ code {
   box-shadow: #0000008a 1px 1px 25px;
 }
 
-
-.img1 {
-  background: linear-gradient(rgba(20, 20, 20, 0.1), rgba(20, 20, 20, 0.1))
-      top/cover no-repeat,
-    url("./assets/cutePuppy.png") top no-repeat;
-  height: 75vh;
-  position: relative;
-}
-
 .card-container {
   margin-top: 30px;
   box-shadow: 1px 2px 15px 3px #00000044;
   background: #e5e6db;
   border-radius: 15px;
-  justify-content: center;
-  width: 90vw;
+  
   margin-inline: auto !important;
-  padding-top: 50px !important;
-  padding: 20px;
   color: black !important;
 }
 
-.l {
-  background: url('./assets/tempLogo.png')
+.logo {
+  height: 200px !important;
+  width: 200px !important;
+  cursor: pointer;
+  z-index: 1;
+  background-repeat: no-repeat;
 }

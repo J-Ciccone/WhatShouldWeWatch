@@ -11,20 +11,18 @@ const MovieSearch = ({ setLoading, setMovieSearchResults }) => {
 
   const [search, setSearch] = useState("");
 
-  const submitHandler = () => {
-    getMovie(search);
+  const getMovie = (search) => {
+    setLoading(true);
+    MovieService.searchMovie(search).then((data) => {
+      setLoading(false);
+      setMovieSearchResults(data.results);
+    });
   };
 
-  const getMovie = async (search) => {
-    setLoading(true);
-    const data = await MovieService.searchMovie(search);
-    setLoading(false);
-    setMovieSearchResults(data.results);
-  };
 
   return (
     <>
-      <div className="search p-3 row">
+      <div className="p-3 row justify-content-center">
         <div className="col-xs-12 col-md-8 text-align-center">
           <Form.Text muted>
             Enter the name of the movie you would like to pick
@@ -43,7 +41,7 @@ const MovieSearch = ({ setLoading, setMovieSearchResults }) => {
               className="btn btn-primary join-vote-button btn-round"
               type="button"
               id="movieSearch"
-              onClick={submitHandler}
+              onClick={() => getMovie(search)}
             >
               <span className="material-symbols-outlined">search</span>
             </button>

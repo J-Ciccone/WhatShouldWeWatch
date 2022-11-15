@@ -1,6 +1,5 @@
 import { Button } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import { getUserId } from "../../Services/LobbyService";
 import "./EndGame.css";
 const EndGameScreen = ({ movies, lobbyData }) => {
   const navigate = useNavigate();
@@ -18,34 +17,38 @@ const EndGameScreen = ({ movies, lobbyData }) => {
     navigate(`/home`);
   };
   return (
-    <>
-      <div
-        className="winner-img"
-        style={{
-          backgroundImage: `linear-gradient(#393e41, rgba(20, 20, 20, 0.579)),url(${winner.image})`,
-        }}
-      />
-      <div
-        className="row  justify-content-center text-align-center"
-        style={{ color: "black" }}
-      >
-        <div className="col-sm-2 mb-3 col-md-4 p-4 g-card winner-row">
-          <h2 className="">{`Let's Watch...`}</h2>
-          <div
-            style={{
-              height: "40vh",
-              background: `url(${winner.image}) center/contain no-repeat`,
-            }}
-          ></div>
-          <h2 className="mt-4 text-align-center">{`${winner.title}!`}</h2>
-          <div>
-            <Button className="btn-primary" onClick={() => exitGame()}>
-              Exit Lobby
-            </Button>
+    <div className="row justify-content-center ">
+      <div className="row justify-content-center ">
+        <div className="card col-md-8 col-xs-12 mb-3 p-0 rounded">
+          <div className="row g-0 ">
+            <div className="col-md-8  p-5">
+              <div className="card-body" style={{color:"black"}}>
+              <h5 className="card-title pb-4">Let's Watch</h5>
+                <h2 className="card-title pb-2"><strong>{winner.title}</strong></h2>
+                <p className="card-text">
+                  {winner.plot}
+                </p>
+                <p className="card-text">
+                  <small className="text-muted">{winner.description}</small>
+                </p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <img
+                src={winner.image}
+                className="img-fluid rounded-start"
+                alt="..."
+              />
+            </div>
           </div>
         </div>
       </div>
-    </>
+      <div className="mt-3 pb-5" style={{ width: "fit-content" }}>
+        <Button className="btn-primary" onClick={() => exitGame()}>
+          Exit Lobby
+        </Button>
+      </div>
+    </div>
   );
 };
 

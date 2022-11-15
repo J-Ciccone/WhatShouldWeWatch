@@ -1,12 +1,29 @@
 .movie-card {
-  position: relative !important;
-}
-
-.card {
   box-shadow: 0px 2px 8px rgba(37, 37, 37, 0.388);
   border-radius: 0px !important;
+  background-color: #d8d9ce !important;
 }
-.select {
+
+.card-body {
+  position: relative;
+}
+
+.movie-card .card-body::after {
+  background-color: #d8d9ce !important;
+  content: "";
+  position: absolute;
+  height: 20px;
+  top: -10px;
+  left: 0px;
+  right: 0px;
+  background-color: #fff;
+  z-index: 0;
+  transform: skewY(3deg);
+}
+
+.select,
+.vote,
+.voted {
   color: white;
   position: absolute;
   top: 0;
@@ -21,34 +38,9 @@
 }
 
 .voted {
-  color: white;
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  height: 100%;
-  width: 100%;
   opacity: 1;
-  transition: 0.5s ease;
-  background: #ff763bca;
-  padding-top: 50%;
 }
 
-.vote {
-  color: white;
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 100%;
-  width: 100%;
-  padding-left: auto;
-  opacity: 0;
-  transition: 0.5s ease;
-  background: #ff763bca;
-  padding-top: 50%;
-}
 .card-image {
   position: relative;
 }
@@ -57,8 +49,8 @@
   cursor: pointer;
 }
 
-.card:hover .select,
-.card:hover .vote {
+.movie-card:hover .select,
+.movie-card:hover .vote {
   opacity: 1;
 }
 
@@ -66,12 +58,21 @@
   border-radius: 0px !important;
 }
 
-.card-title {
+.movie-card .card-title {
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
 }
 
-.card:hover .card-title{
+.movie-card:hover .card-title {
   white-space: normal;
+}
+
+@media only screen and (max-width: 500px) {
+  .card-title{
+    font-size: .8rem !important;
+  }
+  .card-text{
+    font-size: .7rem !important;
+  }
 }

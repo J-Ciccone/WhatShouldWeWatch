@@ -1,54 +1,40 @@
-import Card from "react-bootstrap/Card";
-import Button from "react-bootstrap/Button";
-import { useContext, useEffect, useState } from "react";
-import "./VoteCard.css";
+import { useEffect, useState } from "react";
 import { addUserVotes, removeUserVotes } from "../../Services/VoteService";
 import { getUserId } from "../../Services/LobbyService";
-import { MovieListContext } from "../../Context";
 
-const VoteCard = ({
-  movie,
-  movieId,
-  lobbyData,
-  setShowToast,
-  voteData,
-  setVoteData,
-}) => {
-  const [cardState, updateCardState] = useState({
-    showPlot: false,
-    voted: false,
-  });
+const VoteCard = ({ movie, movieId, lobbyData, voteData, setVoteData }) => {
+  const [voted, updateVoted] = useState(false);
+
   useEffect(() => {
     getUserId().then((userId) => {
       const playerMovies = lobbyData.users[userId].movies;
       if (playerMovies !== undefined && playerMovies[movieId] !== undefined) {
-        if (!lobbyData.unlimitedVotes) {
+        !lobbyData.unlimitedVotes &&
           setVoteData({ ...voteData, canVote: false });
-        }
-        updateCardState({ ...cardState, voted: true });
+        updateVoted(true);
       }
     });
   }, []);
 
   const handleCardStateChange = () => {
     if (lobbyData.unlimitedVotes) {
-      if (cardState.voted) {
+      if (voted) {
         removeUserVotes(movieId);
-        updateCardState({ ...cardState, voted: false });
+        updateVoted(false);
       } else {
-        updateCardState({ ...cardState, voted: true });
+        updateVoted(true);
         addUserVotes(movieId);
       }
     } else {
-      if (cardState.voted) {
-        setVoteData({ ...voteData, canVote: true });
+      if (voted) {
+        setVoteData(true);
         removeUserVotes(movieId);
-        updateCardState({ ...cardState, voted: false });
+        updateVoted(false);
       } else if (!voteData.canVote) {
         setVoteData({ ...voteData, showToast: true });
       } else {
         setVoteData({ ...voteData, canVote: false });
-        updateCardState({ ...cardState, voted: true });
+        updateVoted(true);
         addUserVotes(movieId);
       }
     }
@@ -56,15 +42,15 @@ const VoteCard = ({
 
   return (
     <>
-      <div className="col h-100" onClick={() => handleCardStateChange()}>
-        <div className="card h-100">
+      <div className="h-100" onClick={() => handleCardStateChange()}>
+        <div className="card movie-card h-100">
           <div className="card-image h-75">
             <img
               className="card-img-top h-100"
               src={movie.image}
               alt="card top"
             />
-            {cardState.voted ? (
+            {voted ? (
               <h1 className="voted material-symbols-outlined">done</h1>
             ) : (
               <h4 className="vote">Vote</h4>
@@ -72,8 +58,14 @@ const VoteCard = ({
           </div>
 
           <div className="card-body">
-          <div className="card-title" style={{fontSize: "1.2rem"}}><strong>{movie.title}</strong></div>
-            <p className="card-text"><strong><em>{movie.description}</em></strong></p>
+            <div className="card-title" >
+              <strong>{movie.title}</strong>
+            </div>
+            <p className="card-text">
+              <strong>
+                <em>{movie.description}</em>
+              </strong>
+            </p>
           </div>
         </div>
       </div>

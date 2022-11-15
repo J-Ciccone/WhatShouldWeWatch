@@ -17,7 +17,6 @@ export const addUserVotes = async (movieId) => {
   const db = database;
   const updates = {};
   updates[`/lobbies/${lobbyCode}/movies/${movieId}/votes`] = increment(1);
-  updates[`/lobbies/${lobbyCode}/users/${userId}/votes`] = increment(1);
   updates[`/lobbies/${lobbyCode}/totalVotes`] = increment(1);
   updates[`/lobbies/${lobbyCode}/users/${userId}/movies/${movieId}`] = "1";
   await update(ref(db), updates);
@@ -29,7 +28,6 @@ export const removeUserVotes = async (movieId) => {
   const db = database;
   const updates = {};
   updates[`/lobbies/${lobbyCode}/movies/${movieId}/votes`] = increment(-1);
-  updates[`/lobbies/${lobbyCode}/users/${userId}/votes`] = increment(-1);
   updates[`/lobbies/${lobbyCode}/totalVotes`] = increment(-1);
   const movieRef = ref(db,`/lobbies/${lobbyCode}/users/${userId}/movies/${movieId}`);
   remove(movieRef)

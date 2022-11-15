@@ -8,7 +8,6 @@ import { changeLobbyState } from "../../Services/LobbyService";
 
 const Vote = ({ lobbyData, userId }) => {
   const movieArr = Object.keys(lobbyData.movies);
-  const [showToast, setShowToast] = useState();
   const [voteData, setVoteData] = useState({
     votesCast: 0,
     showToast: false,
@@ -19,44 +18,45 @@ const Vote = ({ lobbyData, userId }) => {
   };
 
   return (
-    <div className="row card-container">
-      <div className="pt-3 pb-5 px-5">
-        <h3 className="">Cast Your Votes!</h3>
-        <h4>
-          Votes: <small>{`${lobbyData.totalVotes}`}</small>
-        </h4>
-        {lobbyData.users[userId].isAdmin && (
-          <div>
-            <Button
-              className="btn-sm"
-              onClick={() => changeLobbyState(VALUES.DONE)}
-            >
-              End Vote
-            </Button>
+    <div className="row  p-5 card-container">
+      <div className="" style={{}}>
+        <div className="row justify-content-center">
+          <div className="vote-count pt-3 pb-5 px-5 w-auto">
+            <h3>Cast Your Votes!</h3>
+            <h4>
+              Votes: <small>{`${lobbyData.totalVotes}`}</small>
+            </h4>
+            {lobbyData.users[userId].isAdmin && (
+              <div>
+                <Button
+                  className="btn-sm"
+                  onClick={() => changeLobbyState(VALUES.DONE)}
+                >
+                  End Vote
+                </Button>
+              </div>
+            )}
           </div>
-        )}
+        </div>
+        <div className="row justify-content-center text-align-center pt-2 pb-3">
+          {movieArr.length > 0 &&
+            movieArr.map((key) => (
+              <div className="col-6 col-sm-6 col-md-4 col-lg-4 col-xl-2 mb-4">
+                <div className="h-100" key={key}>
+                  <VoteCard
+                    movieId={key}
+                    movie={lobbyData.movies[`${key}`]}
+                    lobbyData={lobbyData}
+                    voteData={voteData}
+                    setShowToast={voteData.setShowToast}
+                    setVoteData={setVoteData}
+                  ></VoteCard>
+                </div>
+              </div>
+            ))}
+        </div>
       </div>
 
-      <div className="row d-flex justify-content-center text-align-center">
-        {movieArr.length > 0 &&
-          movieArr.map((key) => (
-            <>
-              <div
-                className="col-6 col-sm-6 col-md-4 col-lg-4 col-xl-2 mb-4"
-                key={key}
-              >
-                <VoteCard
-                  movieId={key}
-                  movie={lobbyData.movies[`${key}`]}
-                  lobbyData={lobbyData}
-                  voteData={voteData}
-                  setShowToast={setShowToast}
-                  setVoteData={setVoteData}
-                ></VoteCard>
-              </div>
-            </>
-          ))}
-      </div>
       <Toast
         onClose={() => setShow()}
         show={voteData.showToast}

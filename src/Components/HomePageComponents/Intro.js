@@ -3,28 +3,26 @@ import { Button, Col, Form, Row } from "react-bootstrap";
 import "./Intro.css";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { addUserToLobby, getUserId } from "../../Services/LobbyService";
+import { addUserToLobby } from "../../Services/LobbyService";
 import Toast from "react-bootstrap/Toast";
 
 //TODO Add new screens to set rules for the new room, or just join a room if it is able to be joined
 const Intro = () => {
   const [code, setCode] = useState("");
   const navigate = useNavigate();
-  const [show, setShow] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   const enterLobby = async () => {
     localStorage.setItem("entries", []);
-    const userId = await getUserId();
-    const validGame = await addUserToLobby(code).then((valid) => {
-      return valid;
+    addUserToLobby(code).then((valid) => {
+      if (valid) {
+        navigate(`/lobby/${code}`);
+      } else {
+        setShowToast(true);
+        setCode("");
+      }
     });
     localStorage.setItem("lobbyCode", code);
-    if (validGame) {
-      navigate(`/lobby/lobby=${code}&user=${userId}`);
-    } else {
-      setShow(true);
-      setCode("");
-    }
   };
   return (
     <>
@@ -33,7 +31,9 @@ const Intro = () => {
           <div className="intro-text">What Should We Watch?</div>
           <div>
             <strong>
-              <em className="intro-text-small">Movie night has never been so easy</em>
+              <em className="intro-text-small">
+                Movie night has never been so easy
+              </em>
             </strong>
           </div>
           <div className="get-started row">
@@ -77,12 +77,11 @@ const Intro = () => {
             </div>
           </div>
         </div>
-
         <div className="bg-img"></div>
       </div>
       <Toast
-        onClose={() => setShow(false)}
-        show={show}
+        onClose={() => setShowToast(false)}
+        show={showToast}
         delay={3000}
         autohide
         className="toast"

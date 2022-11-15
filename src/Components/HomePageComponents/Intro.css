@@ -60,21 +60,20 @@
 }
 
 .bg-img {
-  background: linear-gradient(#393e41, rgba(20, 20, 20, 0.912)),
-    url("../../assets/movie-cartoon3-crops.png");
+  background: linear-gradient(#393e41, rgba(20, 20, 20, 0.92),rgba(20, 20, 20, 0.806)),
+    url("../../assets/background-official-flipped.jpg");
   width: 100%;
-  height: 30vh;
+  height: 100%;
   background-repeat: no-repeat;
-  position: absolute;
+  position: fixed;
   bottom: 0px;
-  left: 0px;
+  left: 0;
   z-index: 0 !important;
   background-size: cover;
+  background-position: 50%;
 }
 @media only screen and (max-width: 600px) {
   .bg-img {
-    background: linear-gradient(#393e41, rgba(20, 20, 20, 0.912)),
-      url("../../assets/movie-cartoon2.png") !important;
     background-repeat: no-repeat !important;
   }
 }
