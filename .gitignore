@@ -10,10 +10,6 @@
 
 # production
 /build
-LobbyService.js
-MovieService.js
-NumberService.js
-VoteService.js
 
 
 # misc
@@ -26,3 +22,5 @@ VoteService.js
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+/src/Services
+/src/FirebaseAssets.js
