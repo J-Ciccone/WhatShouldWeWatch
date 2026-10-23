@@ -18,7 +18,7 @@ let env: RulesTestEnvironment;
 beforeAll(async () => {
   env = await initializeTestEnvironment({
     projectId: "demo-wsww",
-    database: { rules: readFileSync("database.rules.json", "utf8"), host: "127.0.0.1", port: 9000 },
+    database: { rules: readFileSync("database.rules.json", "utf8"), host: "127.0.0.1", port: 9300 },
   });
 });
 
@@ -51,7 +51,14 @@ async function seed(stage: string, settings = { numMovies: 2, unlimitedVotes: fa
   );
 }
 
-const PICK = { title: "Alien", year: "1979", posterPath: "/vfrQk5IPloGg1v9Rzbh2Eg3VGyM.jpg", overview: "In space…" };
+const PICK = {
+  title: "Alien",
+  year: "1979",
+  posterPath: "/vfrQk5IPloGg1v9Rzbh2Eg3VGyM.jpg",
+  backdropPath: "/AmR3JG1VQVxU8TfAvljUhfSFUOx.jpg",
+  overview: "In space…",
+  rating: 8.1,
+};
 
 describe("creating a lobby", () => {
   it("lets a signed-in user create a lobby they host", async () => {
@@ -109,6 +116,63 @@ describe("joining", () => {
     await assertFails(at(STRANGER, `members/${GUEST}`).set(TIMESTAMP));
     await assertFails(at(STRANGER, `members/${STRANGER}`).set("hi"));
   });
+
+  it("accepts a display name, and still accepts the older bare timestamp", async () => {
+    await seed("PICKING");
+    await assertSucceeds(at(STRANGER, `members/${STRANGER}`).set({ name: "Sam 🍿", joinedAt: TIMESTAMP }));
+    await assertSucceeds(at(STRANGER, `members/${STRANGER}`).set({ name: "Sammy", joinedAt: 5 }));
+    await assertSucceeds(at(GUEST, `members/${GUEST}`).set(TIMESTAMP));
+  });
+
+  it("rejects empty or long names, missing fields and extra fields", async () => {
+    await seed("PICKING");
+    const me = at(STRANGER, `members/${STRANGER}`);
+    await assertFails(me.set({ name: "", joinedAt: TIMESTAMP }));
+    await assertFails(me.set({ name: "x".repeat(25), joinedAt: TIMESTAMP }));
+    await assertFails(me.set({ name: "Sam" }));
+    await assertFails(me.set({ name: "Sam", joinedAt: TIMESTAMP, isHost: true }));
+  });
+
+  it("cannot create a partial lobby by joining a code that doesn't exist", async () => {
+    await assertFails(db(STRANGER).ref(`lobbies/ZZZZZZ/members/${STRANGER}`).set({ name: "Sam", joinedAt: TIMESTAMP }));
+  });
+
+  it("lets the host create a lobby with their name", async () => {
+    await assertSucceeds(
+      db(HOST)
+        .ref(`lobbies/${CODE}`)
+        .set(newLobby(HOST, { members: { [HOST]: { name: "Host", joinedAt: TIMESTAMP } } })),
+    );
+  });
+});
+
+describe("tie-break and next round", () => {
+  it("lets only the host set them, only after the vote, and only once", async () => {
+    await seed("VOTING");
+    await assertFails(at(HOST, "tiebreak").set("348"));
+    await assertFails(at(HOST, "nextLobby").set("XYZ789"));
+
+    await seed("DONE");
+    await assertFails(at(GUEST, "tiebreak").set("348"));
+    await assertFails(at(GUEST, "nextLobby").set("XYZ789"));
+    await assertSucceeds(at(HOST, "tiebreak").set("348"));
+    await assertFails(at(HOST, "tiebreak").set("603"));
+    await assertSucceeds(at(HOST, "nextLobby").set("XYZ789"));
+    await assertFails(at(HOST, "nextLobby").set("XYZ788"));
+  });
+
+  it("rejects malformed values and pointing a lobby at itself", async () => {
+    await seed("DONE");
+    await assertFails(at(HOST, "tiebreak").set("not-a-movie"));
+    await assertFails(at(HOST, "nextLobby").set("abc"));
+    await assertFails(at(HOST, "nextLobby").set(CODE));
+  });
+
+  it("cannot be included when creating a lobby", async () => {
+    const ref = db(HOST).ref(`lobbies/${CODE}`);
+    await assertFails(ref.set(newLobby(HOST, { tiebreak: "348" })));
+    await assertFails(ref.set(newLobby(HOST, { nextLobby: "XYZ789" })));
+  });
 });
 
 describe("stage changes", () => {
@@ -161,6 +225,8 @@ describe("picks", () => {
     await assertFails(at(GUEST, `picks/${GUEST}/348`).set({ ...PICK, title: "" }));
     await assertFails(at(GUEST, `picks/${GUEST}/348`).set({ ...PICK, votes: 100 }));
     await assertFails(at(GUEST, `picks/${GUEST}/348`).set({ ...PICK, posterPath: "https://evil.example/x.jpg" }));
+    await assertFails(at(GUEST, `picks/${GUEST}/348`).set({ ...PICK, backdropPath: "javascript:alert(1)" }));
+    await assertFails(at(GUEST, `picks/${GUEST}/348`).set({ ...PICK, rating: 11 }));
     await assertFails(at(GUEST, `picks/${GUEST}`).set("348"));
   });
 });

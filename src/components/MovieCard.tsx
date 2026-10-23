@@ -1,40 +1,64 @@
-import { posterUrl } from "../lib/tmdb";
+import { Check, Info, Plus, Star } from "lucide-react";
+import type { ReactNode } from "react";
+import { imageUrl } from "../lib/tmdb";
 import type { Movie } from "../lib/types";
 
 interface Props {
   movie: Movie;
   selected: boolean;
-  /** Shown over the poster on hover, e.g. "Select" or "Vote". */
+  /** Badge text when not selected, e.g. "Pick" or "Vote". */
   actionLabel: string;
-  onClick: () => void;
+  /** Badge text when selected, e.g. "Picked" or "Your vote". */
+  selectedLabel: string;
+  onToggle: () => void;
+  onInfo?: () => void;
   disabled?: boolean;
+  footer?: ReactNode;
 }
 
-export function MovieCard({ movie, selected, actionLabel, onClick, disabled }: Props) {
-  const poster = posterUrl(movie.posterPath);
+export function MovieCard({ movie, selected, actionLabel, selectedLabel, onToggle, onInfo, disabled, footer }: Props) {
+  const poster = imageUrl(movie.posterPath, "w342");
   return (
-    <button
-      type="button"
-      className={`movie-card ${selected ? "selected" : ""}`}
-      onClick={onClick}
-      disabled={disabled}
-      aria-pressed={selected}
-      aria-label={`${movie.title}${movie.year ? ` (${movie.year})` : ""}`}
-    >
-      <div className="movie-card-image">
-        {poster ? (
-          <img src={poster} alt="" loading="lazy" />
-        ) : (
-          <div className="movie-card-no-poster">{movie.title}</div>
-        )}
-        <div className="movie-card-overlay" aria-hidden="true">
-          {selected ? <span className="material-symbols-outlined">check_circle</span> : actionLabel}
-        </div>
-      </div>
-      <div className="movie-card-body">
-        <div className="movie-card-title">{movie.title}</div>
-        {movie.year && <div className="movie-card-year">{movie.year}</div>}
-      </div>
-    </button>
+    <div className={`movie-card ${selected ? "is-selected" : ""}`}>
+      <button
+        type="button"
+        className="movie-card-main"
+        onClick={onToggle}
+        disabled={disabled}
+        aria-pressed={selected}
+        aria-label={`${movie.title}${movie.year ? ` (${movie.year})` : ""}`}
+      >
+        <span className="movie-card-poster">
+          {poster ? (
+            <img src={poster} alt="" loading="lazy" />
+          ) : (
+            <span className="movie-card-placeholder">{movie.title}</span>
+          )}
+          <span className="movie-card-badge" aria-hidden="true">
+            {selected ? <Check size={16} /> : <Plus size={16} />}
+            {selected ? selectedLabel : actionLabel}
+          </span>
+        </span>
+        <span className="movie-card-meta">
+          <span className="movie-card-title">{movie.title}</span>
+          <span className="movie-card-sub">
+            {movie.year && <span>{movie.year}</span>}
+            {movie.rating !== undefined && (
+              <span className="rating">
+                <Star size={13} fill="currentColor" aria-hidden="true" />
+                <span className="visually-hidden">rated</span>
+                {movie.rating.toFixed(1)}
+              </span>
+            )}
+          </span>
+        </span>
+      </button>
+      {onInfo && (
+        <button type="button" className="movie-card-info" onClick={onInfo} aria-label={`More about ${movie.title}`}>
+          <Info size={18} />
+        </button>
+      )}
+      {footer && <div className="movie-card-footer">{footer}</div>}
+    </div>
   );
 }

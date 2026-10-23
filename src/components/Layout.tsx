@@ -1,5 +1,5 @@
+import { Popcorn } from "lucide-react";
 import { Link, Outlet, useLocation } from "react-router";
-import logo from "../assets/logo.png";
 
 export function Layout() {
   const isHome = useLocation().pathname === "/";
@@ -7,8 +7,11 @@ export function Layout() {
     <div className="app-shell">
       {!isHome && (
         <header className="app-header">
-          <Link to="/" className="logo-link" aria-label="What Should We Watch? home">
-            <img src={logo} alt="" width={120} height={120} />
+          <Link to="/" className="brand" aria-label="What Should We Watch? Home">
+            <span className="brand-mark" aria-hidden="true">
+              <Popcorn size={20} />
+            </span>
+            <span>What Should We Watch?</span>
           </Link>
         </header>
       )}
@@ -16,11 +19,11 @@ export function Layout() {
         <Outlet />
       </main>
       <footer className="app-footer">
-        This product uses the{" "}
+        Movie data from{" "}
         <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">
           TMDB
-        </a>{" "}
-        API but is not endorsed or certified by TMDB.
+        </a>
+        . This product uses the TMDB API but is not endorsed or certified by TMDB.
       </footer>
     </div>
   );

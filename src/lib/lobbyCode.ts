@@ -9,9 +9,13 @@ export function generateLobbyCode(): string {
   return Array.from(bytes, (b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join("");
 }
 
-/** Uppercases and strips spaces/dashes so pasted or typed codes still match. */
+/**
+ * Turns whatever someone typed or pasted into a code: uppercases it, strips
+ * spaces/dashes, and pulls the code out of a pasted invite link.
+ */
 export function normalizeLobbyCode(input: string): string {
-  return input.toUpperCase().replace(/[\s-]/g, "");
+  const fromLink = /\/lobby\/([A-Za-z0-9-]+)/.exec(input);
+  return (fromLink ? fromLink[1]! : input).toUpperCase().replace(/[\s-]/g, "");
 }
 
 export function isValidLobbyCode(code: string): boolean {

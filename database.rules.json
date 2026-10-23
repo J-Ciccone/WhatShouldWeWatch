@@ -4,7 +4,7 @@
       "$code": {
         ".read": "auth != null",
         ".write": "auth != null && !data.exists() && newData.child('hostId').val() === auth.uid",
-        ".validate": "$code.matches(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/) && newData.hasChildren(['hostId', 'createdAt', 'settings', 'stage']) && (data.exists() || (!newData.child('picks').exists() && !newData.child('votes').exists()))",
+        ".validate": "$code.matches(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/) && newData.hasChildren(['hostId', 'createdAt', 'settings', 'stage']) && (data.exists() || (!newData.child('picks').exists() && !newData.child('votes').exists() && !newData.child('tiebreak').exists() && !newData.child('nextLobby').exists()))",
         "hostId": {
           ".validate": "newData.isString()"
         },
@@ -30,7 +30,16 @@
         "members": {
           "$uid": {
             ".write": "auth != null && $uid === auth.uid",
-            ".validate": "$uid === auth.uid && newData.isNumber()"
+            ".validate": "$uid === auth.uid && (newData.isNumber() || newData.hasChildren(['name', 'joinedAt']))",
+            "name": {
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 24"
+            },
+            "joinedAt": {
+              ".validate": "newData.isNumber()"
+            },
+            "$other": {
+              ".validate": false
+            }
           }
         },
         "picks": {
@@ -48,8 +57,14 @@
               "posterPath": {
                 ".validate": "newData.isString() && newData.val().matches(/^\\/[A-Za-z0-9_.-]{1,100}$/)"
               },
+              "backdropPath": {
+                ".validate": "newData.isString() && newData.val().matches(/^\\/[A-Za-z0-9_.-]{1,100}$/)"
+              },
               "overview": {
                 ".validate": "newData.isString() && newData.val().length <= 2000"
+              },
+              "rating": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10"
               },
               "$other": {
                 ".validate": false
@@ -65,6 +80,14 @@
               ".validate": "$movieId.matches(/^[0-9]{1,10}$/) && newData.val() === true"
             }
           }
+        },
+        "tiebreak": {
+          ".write": "auth != null && data.parent().child('hostId').val() === auth.uid && !data.exists()",
+          ".validate": "root.child('lobbies/' + $code + '/stage').val() === 'DONE' && newData.isString() && newData.val().matches(/^[0-9]{1,10}$/)"
+        },
+        "nextLobby": {
+          ".write": "auth != null && data.parent().child('hostId').val() === auth.uid && !data.exists()",
+          ".validate": "root.child('lobbies/' + $code + '/stage').val() === 'DONE' && newData.isString() && newData.val().matches(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/) && newData.val() !== $code"
         },
         "$other": {
           ".validate": false

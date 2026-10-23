@@ -15,6 +15,11 @@ describe("lobby codes", () => {
     expect(normalizeLobbyCode(" abc-234 ")).toBe("ABC234");
   });
 
+  it("pulls the code out of a pasted invite link", () => {
+    expect(normalizeLobbyCode("https://mymoviepicker.web.app/lobby/abc234")).toBe("ABC234");
+    expect(normalizeLobbyCode("Join us! https://whatshouldwewatch.net/lobby/XYZ789?x=1")).toBe("XYZ789");
+  });
+
   it("rejects codes with the wrong length or look-alike characters", () => {
     expect(isValidLobbyCode("ABC23")).toBe(false);
     expect(isValidLobbyCode("ABC2345")).toBe(false);

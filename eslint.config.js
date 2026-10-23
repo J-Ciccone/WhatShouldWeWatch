@@ -19,4 +19,9 @@ export default tseslint.config(
       globals: globals.browser,
     },
   },
+  {
+    // Fast Refresh doesn't apply to test helpers.
+    files: ["src/test/**", "**/*.test.{ts,tsx}"],
+    rules: { "react-refresh/only-export-components": "off" },
+  },
 );

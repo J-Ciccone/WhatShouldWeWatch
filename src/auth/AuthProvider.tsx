@@ -1,7 +1,7 @@
 import { onAuthStateChanged, signInAnonymously } from "firebase/auth";
 import { useEffect, useState, type ReactNode } from "react";
-import { Spinner } from "react-bootstrap";
-import { auth } from "../firebase";
+import { CenteredSpinner } from "../components/ui/Spinner";
+import { auth } from "../firebase/auth";
 import { AuthContext } from "./AuthContext";
 
 /**
@@ -28,23 +28,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   if (error) {
     return (
-      <div className="centered-message">
+      <div className="centered" style={{ padding: 24 }}>
         <h2>Couldn't connect</h2>
-        <p>{error.message}</p>
+        <p className="muted">{error.message}</p>
         <button className="btn btn-primary" onClick={() => window.location.reload()}>
           Try again
         </button>
       </div>
     );
   }
-  if (!uid) {
-    return (
-      <div className="centered-message">
-        <Spinner animation="border" role="status">
-          <span className="visually-hidden">Connecting…</span>
-        </Spinner>
-      </div>
-    );
-  }
+  if (!uid) return <CenteredSpinner label="Connecting…" />;
   return <AuthContext value={uid}>{children}</AuthContext>;
 }

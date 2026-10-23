@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { moviePool, tally, voterCount, votesOf, winners } from "./tally";
+import { finalWinners, moviePool, pickRandom, tally, voterCount, votesOf, winners } from "./tally";
 import type { Lobby } from "./types";
 
 const alien = { title: "Alien", year: "1979" };
@@ -22,6 +22,13 @@ describe("moviePool", () => {
     // Regression: the old shared "added" counter could delete a movie someone else still wanted.
     const pool = moviePool({ picks: { ann: { "348": alien }, bob: { "603": matrix } } });
     expect(pool.map((p) => p.movie.id).sort()).toEqual(["348", "603"]);
+  });
+
+  it("fills in missing details from other people's copies of the same pick", () => {
+    const pool = moviePool({
+      picks: { ann: { "578": { title: "Jaws" } }, bob: { "578": { title: "Jaws", posterPath: "/j.jpg", rating: 7.7 } } },
+    });
+    expect(pool[0]!.movie).toEqual({ id: "578", title: "Jaws", posterPath: "/j.jpg", rating: 7.7 });
   });
 
   it("handles a lobby with no picks", () => {
@@ -59,6 +66,22 @@ describe("tally and winners", () => {
   it("returns every movie with zero votes when nobody voted, and nothing for an empty lobby", () => {
     expect(winners({ picks }).every((w) => w.votes === 0)).toBe(true);
     expect(winners({})).toEqual([]);
+  });
+
+  it("applies the host's tie-break only to an actual tie", () => {
+    const tied = { picks, votes: { ann: "603", bob: "348" } };
+    expect(finalWinners({ ...tied, tiebreak: "348" }).map((w) => w.movie.id)).toEqual(["348"]);
+    // A tie-break naming a movie that isn't among the tied ones is ignored.
+    expect(finalWinners({ ...tied, tiebreak: "949" })).toHaveLength(2);
+    // Without a tie, the tie-break doesn't override the real winner.
+    expect(finalWinners({ picks, votes: { ann: "603" }, tiebreak: "348" }).map((w) => w.movie.id)).toEqual(["603"]);
+  });
+
+  it("picks every option eventually and never one outside the list", () => {
+    const seen = new Set<string>();
+    for (let i = 0; i < 300; i++) seen.add(pickRandom(["a", "b", "c"]));
+    expect([...seen].sort()).toEqual(["a", "b", "c"]);
+    expect(() => pickRandom([])).toThrow();
   });
 
   it("counts people who voted", () => {

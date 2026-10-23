@@ -11,8 +11,14 @@ export function moviePool(lobby: Pick<Lobby, "picks">): PoolEntry[] {
   for (const [uid, picks] of Object.entries(lobby.picks ?? {})) {
     for (const [id, stored] of Object.entries(picks ?? {})) {
       const entry = byId.get(id);
-      if (entry) entry.pickedBy.push(uid);
-      else byId.set(id, { movie: { ...stored, id }, pickedBy: [uid] });
+      if (entry) {
+        entry.pickedBy.push(uid);
+        // Fill in anything the first copy lacks (e.g. a pick saved by an older
+        // version of the app without a poster or rating).
+        entry.movie = { ...stored, ...entry.movie };
+      } else {
+        byId.set(id, { movie: { ...stored, id }, pickedBy: [uid] });
+      }
     }
   }
   return [...byId.values()].sort(
@@ -50,4 +56,21 @@ export function winners(lobby: Pick<Lobby, "picks" | "votes">): TallyEntry[] {
   const results = tally(lobby);
   const top = Math.max(0, ...results.map((r) => r.votes));
   return results.filter((r) => r.votes === top);
+}
+
+/** Winners after applying the host's tie-break, if they made one. */
+export function finalWinners(lobby: Pick<Lobby, "picks" | "votes" | "tiebreak">): TallyEntry[] {
+  const top = winners(lobby);
+  if (top.length > 1 && lobby.tiebreak) {
+    const chosen = top.find((t) => t.movie.id === lobby.tiebreak);
+    if (chosen) return [chosen];
+  }
+  return top;
+}
+
+/** A uniformly random element, using the crypto RNG. */
+export function pickRandom<T>(items: readonly T[]): T {
+  if (items.length === 0) throw new Error("pickRandom needs at least one item");
+  const [n] = crypto.getRandomValues(new Uint32Array(1));
+  return items[n! % items.length]!;
 }

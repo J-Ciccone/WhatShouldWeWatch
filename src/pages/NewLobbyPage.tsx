@@ -1,24 +1,29 @@
+import { CheckCheck, ChevronRight, CircleCheck } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { Button, Form, Spinner } from "react-bootstrap";
 import { useNavigate } from "react-router";
 import { useUid } from "../auth/AuthContext";
-import { MOVIES_PER_PERSON_OPTIONS } from "../lib/types";
+import { cleanName, loadSavedName, saveName } from "../lib/players";
+import { MAX_NAME_LENGTH, MOVIES_PER_PERSON_OPTIONS } from "../lib/types";
 import { createLobby } from "../services/lobby";
 
 export function NewLobbyPage() {
   const uid = useUid();
   const navigate = useNavigate();
-  const [numMovies, setNumMovies] = useState<number>(2);
+  const [name, setName] = useState(loadSavedName);
+  const [numMovies, setNumMovies] = useState<number>(3);
   const [unlimitedVotes, setUnlimitedVotes] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const cleaned = cleanName(name);
 
   const start = async (e: FormEvent) => {
     e.preventDefault();
+    if (!cleaned) return;
     setCreating(true);
     setError(null);
+    saveName(cleaned);
     try {
-      const code = await createLobby(uid, { numMovies, unlimitedVotes });
+      const code = await createLobby(uid, { numMovies, unlimitedVotes }, cleaned);
       navigate(`/lobby/${code}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't create the lobby.");
@@ -27,42 +32,81 @@ export function NewLobbyPage() {
   };
 
   return (
-    <div className="page-center">
-      <Form className="panel setup-form" onSubmit={start}>
-        <h2>Let's Get Started</h2>
-        <Form.Group className="mt-3" controlId="num-movies">
-          <Form.Label>Movies each person picks</Form.Label>
-          <Form.Select value={numMovies} onChange={(e) => setNumMovies(Number(e.target.value))}>
-            {MOVIES_PER_PERSON_OPTIONS.map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </Form.Select>
-        </Form.Group>
-        <Form.Check
-          className="mt-3"
-          type="switch"
-          id="unlimited-votes"
-          label="Let people vote for more than one movie"
-          checked={unlimitedVotes}
-          onChange={(e) => setUnlimitedVotes(e.target.checked)}
+    <form className="setup" onSubmit={start}>
+      <div>
+        <p className="eyebrow">New movie night</p>
+        <h2>Let's set things up</h2>
+      </div>
+
+      <div className="field">
+        <label className="field-label" htmlFor="host-name">
+          Your name
+        </label>
+        <input
+          id="host-name"
+          className="input"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={MAX_NAME_LENGTH + 8}
+          placeholder="e.g. Sam"
+          autoComplete="nickname"
+          required
         />
-        {error && (
-          <div className="alert alert-danger mt-3 mb-0" role="alert">
-            {error}
-          </div>
-        )}
-        <div className="mt-4">
-          {creating ? (
-            <Spinner animation="border" role="status">
-              <span className="visually-hidden">Creating lobby…</span>
-            </Spinner>
-          ) : (
-            <Button type="submit">Start Vote</Button>
-          )}
+      </div>
+
+      <fieldset className="field" style={{ border: 0, padding: 0, margin: 0 }}>
+        <legend className="field-label" style={{ marginBottom: "0.4rem" }}>
+          Movies each person picks
+        </legend>
+        <div className="segmented">
+          {MOVIES_PER_PERSON_OPTIONS.map((n) => (
+            <label key={n}>
+              <input
+                type="radio"
+                name="num-movies"
+                value={n}
+                checked={numMovies === n}
+                onChange={() => setNumMovies(n)}
+              />
+              <span>{n}</span>
+            </label>
+          ))}
         </div>
-      </Form>
-    </div>
+      </fieldset>
+
+      <fieldset className="field" style={{ border: 0, padding: 0, margin: 0 }}>
+        <legend className="field-label" style={{ marginBottom: "0.4rem" }}>
+          How voting works
+        </legend>
+        <div className="choice-cards">
+          <label className="choice-card">
+            <input type="radio" name="vote-mode" checked={!unlimitedVotes} onChange={() => setUnlimitedVotes(false)} />
+            <CircleCheck size={22} aria-hidden="true" />
+            <span>
+              <strong>One vote each</strong>
+              <span className="muted small">Everyone backs their favourite.</span>
+            </span>
+          </label>
+          <label className="choice-card">
+            <input type="radio" name="vote-mode" checked={unlimitedVotes} onChange={() => setUnlimitedVotes(true)} />
+            <CheckCheck size={22} aria-hidden="true" />
+            <span>
+              <strong>Vote for any</strong>
+              <span className="muted small">Pick everything you'd watch. Great for big groups.</span>
+            </span>
+          </label>
+        </div>
+      </fieldset>
+
+      {error && (
+        <div className="alert" role="alert">
+          {error}
+        </div>
+      )}
+
+      <button type="submit" className="btn btn-primary btn-lg btn-block" disabled={!cleaned || creating}>
+        {creating ? "Creating lobby…" : "Create lobby"} {!creating && <ChevronRight size={20} />}
+      </button>
+    </form>
   );
 }

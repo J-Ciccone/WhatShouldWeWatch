@@ -1,10 +1,16 @@
+import { ChevronRight } from "lucide-react";
 import { useState } from "react";
-import { Button, ListGroup } from "react-bootstrap";
+import { isPlayerDone, playersOf } from "../lib/players";
 import { moviePool } from "../lib/tally";
 import { MIN_MOVIES_TO_VOTE, type Lobby, type Movie } from "../lib/types";
 import { addPick, removePick, setStage } from "../services/lobby";
+import { MovieCard } from "./MovieCard";
+import { MovieDetailsDialog } from "./MovieDetailsDialog";
 import { MovieSearch } from "./MovieSearch";
-import { Notice } from "./Notice";
+import { PicksTray } from "./PicksTray";
+import { ActionBar } from "./ui/ActionBar";
+import { AvatarStack } from "./ui/Avatar";
+import { useToast } from "./ui/toastContext";
 
 interface Props {
   code: string;
@@ -15,32 +21,35 @@ interface Props {
 }
 
 export function PickingStage({ code, lobby, uid, canAct }: Props) {
-  const [notice, setNotice] = useState<string | null>(null);
-  // Movie ids with a pick write still in flight, so fast clicks can't overshoot the limit.
+  const toast = useToast();
+  // Movie ids with a pick write still in flight, so fast taps can't overshoot the limit.
   const [pendingAdds, setPendingAdds] = useState<ReadonlySet<string>>(new Set());
+  const [details, setDetails] = useState<Movie | null>(null);
 
   const myPicks = lobby.picks?.[uid] ?? {};
-  const myPickIds = Object.keys(myPicks);
   const limit = lobby.settings.numMovies;
-  const used = myPickIds.length + [...pendingAdds].filter((id) => !(id in myPicks)).length;
+  const used = Object.keys(myPicks).length + [...pendingAdds].filter((id) => !(id in myPicks)).length;
   const pool = moviePool(lobby);
+  const players = playersOf(lobby);
   const isHost = lobby.hostId === uid;
+  const everyoneDone = players.length > 1 && players.every((p) => isPlayerDone(lobby, p.uid));
+  const enoughMovies = pool.length >= MIN_MOVIES_TO_VOTE;
 
   const toggle = async (movie: Movie) => {
     if (movie.id in myPicks) {
-      await removePick(code, uid, movie.id).catch(() => setNotice("Couldn't remove that pick. Try again."));
+      await removePick(code, uid, movie.id).catch(() => toast("Couldn't remove that pick. Try again.", "error"));
       return;
     }
     if (pendingAdds.has(movie.id)) return;
     if (used >= limit) {
-      setNotice(`You can only pick ${limit} movies. Remove one first!`);
+      toast(`You've picked ${limit} already. Remove one to swap it out.`);
       return;
     }
     setPendingAdds((s) => new Set(s).add(movie.id));
     try {
       await addPick(code, uid, movie);
     } catch {
-      setNotice("Couldn't save that pick. Try again.");
+      toast("Couldn't save that pick. Try again.", "error");
     } finally {
       setPendingAdds((s) => {
         const next = new Set(s);
@@ -50,64 +59,80 @@ export function PickingStage({ code, lobby, uid, canAct }: Props) {
     }
   };
 
-  const startVoting = () =>
-    setStage(code, "VOTING").catch(() => setNotice("Couldn't start voting. Try again."));
+  const startVoting = () => setStage(code, "VOTING").catch(() => toast("Couldn't start voting. Try again.", "error"));
 
   return (
-    <div className="row g-4">
-      <div className="col-lg-8">
-        <div className="panel">
-          <h3>Pick your movies</h3>
-          <p className="text-muted mb-3">Choose up to {limit}. Everyone's picks go into the vote.</p>
-          <MovieSearch isSelected={(id) => id in myPicks} onToggle={toggle} disabled={!canAct} />
-        </div>
+    <>
+      <p className="muted">
+        Pick up to <strong>{limit}</strong> movies you'd be happy to watch. Everyone's picks go into the vote.
+      </p>
+
+      {pool.length > 0 && (
+        <section className="section" aria-label="The group's picks">
+          <div className="section-head">
+            <h3>The group's picks</h3>
+            <span className="muted small">
+              {pool.length} {pool.length === 1 ? "movie" : "movies"}
+            </span>
+          </div>
+          <div className="movie-grid">
+            {pool.map(({ movie, pickedBy }) => (
+              <MovieCard
+                key={movie.id}
+                movie={movie}
+                selected={movie.id in myPicks}
+                actionLabel="Pick too"
+                selectedLabel="Picked"
+                onToggle={() => toggle(movie)}
+                onInfo={() => setDetails(movie)}
+                disabled={!canAct}
+                footer={<AvatarStack players={players.filter((p) => pickedBy.includes(p.uid))} />}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <div className="section">
+        <MovieSearch
+          isSelected={(id) => id in myPicks}
+          onToggle={toggle}
+          onInfo={setDetails}
+          disabled={!canAct}
+        />
       </div>
 
-      <aside className="col-lg-4 order-first order-lg-last">
-        <div className="panel pick-sidebar">
-          <h4>
-            Your picks{" "}
-            <small className="text-muted">
-              ({myPickIds.length}/{limit})
-            </small>
-          </h4>
-          <ListGroup variant="flush" className="mb-3">
-            {myPickIds.length === 0 && <ListGroup.Item className="pick-item">Your picks will appear here.</ListGroup.Item>}
-            {myPickIds.map((id) => {
-              const movie = myPicks[id]!;
-              return (
-                <ListGroup.Item key={id} className="pick-item">
-                  <span>
-                    <strong>{movie.title}</strong> {movie.year && <em>({movie.year})</em>}
-                  </span>
-                  <Button size="sm" variant="danger" onClick={() => toggle({ ...movie, id })}>
-                    Remove
-                  </Button>
-                </ListGroup.Item>
-              );
-            })}
-          </ListGroup>
+      <MovieDetailsDialog
+        movie={details}
+        onClose={() => setDetails(null)}
+        action={
+          details
+            ? {
+                label: "Pick this",
+                selectedLabel: "Picked",
+                selected: details.id in myPicks,
+                onToggle: () => toggle(details),
+                disabled: !canAct,
+              }
+            : undefined
+        }
+      />
 
-          <p className="mb-2">
-            {pool.length} {pool.length === 1 ? "movie" : "movies"} picked so far.
-          </p>
-          {isHost ? (
-            <>
-              <Button className="w-100" onClick={startVoting} disabled={pool.length < MIN_MOVIES_TO_VOTE}>
-                Start voting
-              </Button>
-              {pool.length < MIN_MOVIES_TO_VOTE && (
-                <small className="text-muted d-block mt-2">
-                  You need at least {MIN_MOVIES_TO_VOTE} movies to start the vote.
-                </small>
-              )}
-            </>
-          ) : (
-            <small className="text-muted">Waiting for the host to start the vote…</small>
-          )}
+      <ActionBar>
+        <div className="action-bar-status">
+          <PicksTray picks={myPicks} limit={limit} onRemove={(id) => toggle({ ...myPicks[id]!, id })} />
         </div>
-      </aside>
-      <Notice message={notice} onClose={() => setNotice(null)} />
-    </div>
+        {isHost ? (
+          <button type="button" className="btn btn-primary" onClick={startVoting} disabled={!enoughMovies}>
+            {enoughMovies ? (everyoneDone ? "Everyone's in! Vote" : "Start voting") : `Need ${MIN_MOVIES_TO_VOTE}+ movies`}
+            {enoughMovies && <ChevronRight size={18} />}
+          </button>
+        ) : (
+          <span className="muted small" style={{ textAlign: "right" }}>
+            The host starts the vote
+          </span>
+        )}
+      </ActionBar>
+    </>
   );
 }

@@ -1,15 +1,12 @@
 {
   "short_name": "Watch?",
   "name": "What Should We Watch?",
+  "description": "Pick movies with your friends, vote, and find out what to watch tonight.",
   "icons": [
-    {
-      "src": "logo_background.ico",
-      "sizes": "256x256 128x128 64x64 32x32 16x16",
-      "type": "image/x-icon"
-    }
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ],
   "start_url": "/",
   "display": "standalone",
-  "theme_color": "#393e41",
-  "background_color": "#393e41"
+  "theme_color": "#121418",
+  "background_color": "#121418"
 }

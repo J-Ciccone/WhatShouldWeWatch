@@ -7,7 +7,10 @@ export interface Movie {
   title: string;
   year?: string;
   posterPath?: string;
+  backdropPath?: string;
   overview?: string;
+  /** TMDB average rating, 0–10. */
+  rating?: number;
 }
 
 /** What is stored under picks/{uid}/{movieId}. */
@@ -17,6 +20,14 @@ export interface LobbySettings {
   numMovies: number;
   unlimitedVotes: boolean;
 }
+
+export interface MemberInfo {
+  name: string;
+  joinedAt: number;
+}
+
+/** A bare number is a join timestamp from before players had names. */
+export type MemberEntry = number | MemberInfo;
 
 /**
  * Shape of lobbies/{code} in the Realtime Database.
@@ -28,9 +39,13 @@ export interface Lobby {
   createdAt: number;
   settings: LobbySettings;
   stage: Stage;
-  members?: Record<string, number>;
+  members?: Record<string, MemberEntry>;
   picks?: Record<string, Record<string, StoredMovie>>;
   votes?: Record<string, string | Record<string, true>>;
+  /** Set by the host to settle a tie once the vote is over. */
+  tiebreak?: string;
+  /** Code of the follow-up lobby when the host starts another round. */
+  nextLobby?: string;
 }
 
 /**
@@ -51,3 +66,4 @@ export function isLobby(value: unknown): value is Lobby {
 
 export const MIN_MOVIES_TO_VOTE = 2;
 export const MOVIES_PER_PERSON_OPTIONS = [2, 3, 4, 5] as const;
+export const MAX_NAME_LENGTH = 24;

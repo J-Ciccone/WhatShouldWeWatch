@@ -1,13 +1,22 @@
-import { useEffect, useRef, useState } from "react";
-import { Button, Spinner } from "react-bootstrap";
-import { Link, Navigate, useParams } from "react-router";
+import { QrCode, Share2, UserPlus } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { useUid } from "../auth/AuthContext";
+import { InviteDialog } from "../components/InviteDialog";
+import { NameDialog } from "../components/NameDialog";
 import { PickingStage } from "../components/PickingStage";
+import { PlayerStrip } from "../components/PlayerStrip";
 import { ResultsStage } from "../components/ResultsStage";
+import { Stepper } from "../components/Stepper";
+import { CenteredSpinner } from "../components/ui/Spinner";
+import { useToast } from "../components/ui/toastContext";
 import { VotingStage } from "../components/VotingStage";
 import { useLobby } from "../hooks/useLobby";
+import { shareInvite } from "../lib/invite";
 import { isValidLobbyCode, normalizeLobbyCode } from "../lib/lobbyCode";
-import { joinLobby } from "../services/lobby";
+import { loadSavedName, playersOf, saveName } from "../lib/players";
+import { forgetLobby, rememberLobby } from "../lib/recentLobbies";
+import { joinLobby, renameMember } from "../services/lobby";
 
 export function LobbyPage() {
   const raw = useParams().code ?? "";
@@ -19,31 +28,51 @@ export function LobbyPage() {
 
 function LobbyView({ code }: { code: string }) {
   const uid = useUid();
+  const toast = useToast();
+  const navigate = useNavigate();
   const state = useLobby(code);
+  const [savedName, setSavedName] = useState(loadSavedName);
   const [joinError, setJoinError] = useState<string | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
   const joinRequested = useRef(false);
 
   const lobby = state.status === "ready" ? state.lobby : null;
-  const isMember = Boolean(lobby?.members?.[uid]);
+  const me = lobby?.members?.[uid];
+  const isMember = me !== undefined && me !== null;
   // Anyone opening the link joins automatically, unless the vote is already over.
   const needsJoin = lobby !== null && !isMember && lobby.stage !== "DONE";
 
+  const join = useCallback(
+    (name: string) => {
+      if (joinRequested.current) return;
+      joinRequested.current = true;
+      setJoinError(null);
+      joinLobby(code, uid, name).catch((err: Error) => {
+        joinRequested.current = false;
+        setJoinError(err.message);
+      });
+    },
+    [code, uid],
+  );
+
+  // People who've played before already have a name, so they go straight in.
   useEffect(() => {
-    if (!needsJoin || joinRequested.current) return;
-    joinRequested.current = true;
-    joinLobby(code, uid).catch((err: Error) => {
-      joinRequested.current = false;
-      setJoinError(err.message);
-    });
-  }, [needsJoin, code, uid]);
+    if (needsJoin && savedName) join(savedName);
+  }, [needsJoin, savedName, join]);
+
+  useEffect(() => {
+    if (state.status === "ready") rememberLobby(code);
+    if (state.status === "missing") forgetLobby(code);
+  }, [state.status, code]);
 
   if (state.status === "loading") return <CenteredSpinner label="Loading lobby…" />;
   if (state.status === "missing") return <LobbyNotFound code={code} />;
   if (state.status === "error") {
     return (
-      <div className="centered-message">
+      <div className="centered">
         <h2>Couldn't load this lobby</h2>
-        <p>{state.error.message}</p>
+        <p className="muted">{state.error.message}</p>
         <Link to="/" className="btn btn-primary">
           Back to home
         </Link>
@@ -51,75 +80,121 @@ function LobbyView({ code }: { code: string }) {
     );
   }
 
-  const { lobby: current } = state;
-  return (
-    <div className="lobby">
-      <LobbyHeader code={code} playerCount={Object.keys(current.members ?? {}).length} />
-      {joinError && (
-        <div className="alert alert-danger" role="alert">
-          Couldn't join this lobby: {joinError}
-        </div>
-      )}
-      {current.stage === "PICKING" && <PickingStage code={code} lobby={current} uid={uid} canAct={isMember} />}
-      {current.stage === "VOTING" && <VotingStage code={code} lobby={current} uid={uid} canAct={isMember} />}
-      {current.stage === "DONE" && <ResultsStage lobby={current} />}
-    </div>
-  );
-}
+  const current = state.lobby;
+  const players = playersOf(current);
+  const isHost = current.hostId === uid;
+  const alone = players.length <= 1 && current.stage === "PICKING";
 
-function LobbyHeader({ code, playerCount }: { code: string; playerCount: number }) {
-  const [copied, setCopied] = useState(false);
+  const rename = (name: string) => {
+    saveName(name);
+    setSavedName(name);
+    setRenameOpen(false);
+    const joinedAt = typeof me === "number" ? me : (me?.joinedAt ?? 0);
+    renameMember(code, uid, name, joinedAt).then(
+      () => toast("Name updated", "success"),
+      () => toast("Couldn't change your name. Try again.", "error"),
+    );
+  };
 
-  const copyInvite = async () => {
-    try {
-      await navigator.clipboard.writeText(`${window.location.origin}/lobby/${code}`);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard can be blocked (e.g. insecure context); the code is on screen anyway.
-    }
+  const share = async () => {
+    const result = await shareInvite(code);
+    if (result === "copied") toast("Invite link copied!", "success");
+    if (result === "failed") setInviteOpen(true);
   };
 
   return (
-    <div className="lobby-header">
-      <h2 className="mb-0">
-        Lobby code: <span className="lobby-code">{code}</span>
-      </h2>
-      <div className="lobby-header-meta">
-        <span>
-          {playerCount} {playerCount === 1 ? "player" : "players"}
-        </span>
-        <Button size="sm" variant="secondary" onClick={copyInvite}>
-          <span className="material-symbols-outlined icon-inline" aria-hidden="true">
-            {copied ? "check" : "link"}
-          </span>{" "}
-          {copied ? "Copied!" : "Copy invite link"}
-        </Button>
+    <div className="lobby">
+      <div className="lobby-top">
+        <button
+          type="button"
+          className="code-pill"
+          onClick={() => setInviteOpen(true)}
+          aria-label={`Lobby code ${code}. Show invite options`}
+          style={{ cursor: "pointer" }}
+        >
+          <span className="label">Code</span>
+          <span className="code">{code}</span>
+          <span className="icon-btn" aria-hidden="true" style={{ width: 34, height: 34 }}>
+            <QrCode size={16} />
+          </span>
+        </button>
+        <button type="button" className="btn" onClick={share}>
+          <Share2 size={18} /> Invite
+        </button>
       </div>
+
+      <Stepper stage={current.stage} />
+      <PlayerStrip lobby={current} uid={uid} onRename={() => setRenameOpen(true)} />
+
+      {alone && isHost && (
+        <div className="banner">
+          <p>
+            <UserPlus size={18} style={{ verticalAlign: "-3px" }} aria-hidden="true" /> It's just you so far. Invite
+            your friends to join!
+          </p>
+          <button type="button" className="btn btn-primary btn-sm" onClick={() => setInviteOpen(true)}>
+            Show invite
+          </button>
+        </div>
+      )}
+
+      {joinError && (
+        <div className="alert" role="alert" style={{ marginBottom: 16 }}>
+          Couldn't join this lobby: {joinError}{" "}
+          <button type="button" className="btn btn-sm" onClick={() => savedName && join(savedName)}>
+            Try again
+          </button>
+        </div>
+      )}
+
+      {current.stage === "PICKING" && <PickingStage code={code} lobby={current} uid={uid} canAct={isMember} />}
+      {current.stage === "VOTING" && <VotingStage code={code} lobby={current} uid={uid} canAct={isMember} />}
+      {current.stage === "DONE" && <ResultsStage code={code} lobby={current} uid={uid} />}
+
+      <InviteDialog code={code} open={inviteOpen} onClose={() => setInviteOpen(false)} />
+
+      <NameDialog
+        open={needsJoin && !savedName}
+        initialName=""
+        title="Join the movie night"
+        submitLabel="Join"
+        onSubmit={(name) => {
+          saveName(name);
+          setSavedName(name);
+        }}
+        // Esc, the close button or Android back all mean "not now". Replace the
+        // history entry so the next back press leaves instead of returning here.
+        onClose={() => navigate("/", { replace: true })}
+      >
+        <p className="muted small" style={{ margin: 0 }}>
+          Not now? <Link to="/">Go back home</Link>
+        </p>
+      </NameDialog>
+
+      {renameOpen && (
+        <NameDialog
+          open
+          initialName={savedName}
+          title="Change your name"
+          submitLabel="Save"
+          onSubmit={rename}
+          onClose={() => setRenameOpen(false)}
+        />
+      )}
     </div>
   );
 }
 
 function LobbyNotFound({ code }: { code: string }) {
   return (
-    <div className="centered-message">
+    <div className="centered">
       <h2>Lobby not found</h2>
-      <p>
-        There's no vote with the code <strong>{code}</strong>. Check the code and try again.
+      <p className="muted">
+        There's no movie night with the code <strong>{code}</strong>. Double-check it with whoever invited you.
       </p>
       <Link to="/" className="btn btn-primary">
         Back to home
       </Link>
-    </div>
-  );
-}
-
-function CenteredSpinner({ label }: { label: string }) {
-  return (
-    <div className="centered-message">
-      <Spinner animation="border" role="status">
-        <span className="visually-hidden">{label}</span>
-      </Spinner>
     </div>
   );
 }

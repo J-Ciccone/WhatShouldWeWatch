@@ -1,10 +1,14 @@
+import { PartyPopper } from "lucide-react";
 import { useState } from "react";
-import { Button } from "react-bootstrap";
-import { moviePool, voterCount, votesOf } from "../lib/tally";
-import type { Lobby } from "../lib/types";
+import { playersOf } from "../lib/players";
+import { moviePool, votesOf } from "../lib/tally";
+import type { Lobby, Movie } from "../lib/types";
 import { setMultiVote, setSingleVote, setStage } from "../services/lobby";
 import { MovieCard } from "./MovieCard";
-import { Notice } from "./Notice";
+import { MovieDetailsDialog } from "./MovieDetailsDialog";
+import { ActionBar } from "./ui/ActionBar";
+import { AvatarStack } from "./ui/Avatar";
+import { useToast } from "./ui/toastContext";
 
 interface Props {
   code: string;
@@ -15,59 +19,93 @@ interface Props {
 }
 
 export function VotingStage({ code, lobby, uid, canAct }: Props) {
-  const [notice, setNotice] = useState<string | null>(null);
+  const toast = useToast();
+  const [details, setDetails] = useState<Movie | null>(null);
   const pool = moviePool(lobby);
   const myVotes = new Set(votesOf(lobby, uid));
   const unlimited = lobby.settings.unlimitedVotes;
   const isHost = lobby.hostId === uid;
-  const players = Object.keys(lobby.members ?? {}).length;
+  const players = playersOf(lobby);
+  const voted = players.filter((p) => votesOf(lobby, p.uid).length > 0);
+  const everyoneVoted = players.length > 0 && voted.length === players.length;
 
   const toggle = (movieId: string) => {
-    const voted = myVotes.has(movieId);
-    // Single-vote lobbies: clicking another movie moves your vote; clicking yours withdraws it.
+    const isVoted = myVotes.has(movieId);
+    // Single-vote lobbies: tapping another movie moves your vote; tapping yours withdraws it.
     const write = unlimited
-      ? setMultiVote(code, uid, movieId, !voted)
-      : setSingleVote(code, uid, voted ? null : movieId);
-    write.catch(() => setNotice("Couldn't save your vote. Try again."));
+      ? setMultiVote(code, uid, movieId, !isVoted)
+      : setSingleVote(code, uid, isVoted ? null : movieId);
+    write.catch(() => toast("Couldn't save your vote. Try again.", "error"));
   };
 
-  const endVote = () => setStage(code, "DONE").catch(() => setNotice("Couldn't end the vote. Try again."));
+  const reveal = () => setStage(code, "DONE").catch(() => toast("Couldn't end the vote. Try again.", "error"));
 
   return (
-    <div className="panel">
-      <div className="vote-header">
-        <div>
-          <h3>Cast your vote!</h3>
-          <p className="text-muted mb-0">
-            {unlimited
-              ? "Vote for as many movies as you like."
-              : "Pick one movie. Tap a different one to change your vote."}
-          </p>
-        </div>
-        <div className="vote-status">
-          <div>
-            <strong>{voterCount(lobby)}</strong> of {players} {players === 1 ? "player has" : "players have"} voted
-          </div>
-          {isHost && (
-            <Button className="mt-2" onClick={endVote}>
-              End vote
-            </Button>
-          )}
-        </div>
-      </div>
-      <div className="movie-grid mt-4">
+    <>
+      <p className="muted">
+        {unlimited
+          ? "Vote for every movie you'd be happy with. Most votes wins."
+          : "Tap the one you want most. Tap another to change your mind."}{" "}
+        Results appear when the host reveals the winner.
+      </p>
+
+      <div className="movie-grid section">
         {pool.map(({ movie }) => (
           <MovieCard
             key={movie.id}
             movie={movie}
             selected={myVotes.has(movie.id)}
             actionLabel="Vote"
-            onClick={() => toggle(movie.id)}
+            selectedLabel={unlimited ? "Voted" : "Your vote"}
+            onToggle={() => toggle(movie.id)}
+            onInfo={() => setDetails(movie)}
             disabled={!canAct}
           />
         ))}
       </div>
-      <Notice message={notice} onClose={() => setNotice(null)} />
-    </div>
+
+      <MovieDetailsDialog
+        movie={details}
+        onClose={() => setDetails(null)}
+        action={
+          details
+            ? {
+                label: "Vote for this",
+                selectedLabel: unlimited ? "Voted" : "Your vote",
+                selected: myVotes.has(details.id),
+                onToggle: () => toggle(details.id),
+                disabled: !canAct,
+              }
+            : undefined
+        }
+      />
+
+      <ActionBar>
+        <div className="action-bar-status">
+          {voted.length > 0 && <AvatarStack players={voted} max={5} />}
+          <div>
+            <strong>
+              {voted.length} of {players.length} voted
+            </strong>
+            <span className="muted small">
+              {everyoneVoted
+                ? "Everyone's in!"
+                : myVotes.size > 0
+                  ? "Your vote is in."
+                  : "Tap a movie to vote."}
+            </span>
+          </div>
+        </div>
+        {isHost ? (
+          <button type="button" className="btn btn-primary" onClick={reveal}>
+            <PartyPopper size={18} /> Reveal winner
+          </button>
+        ) : (
+          <span className="muted small" style={{ textAlign: "right" }}>
+            The host reveals the winner
+          </span>
+        )}
+      </ActionBar>
+    </>
   );
 }

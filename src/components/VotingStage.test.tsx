@@ -1,14 +1,20 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Lobby } from "../lib/types";
 import { setMultiVote, setSingleVote, setStage } from "../services/lobby";
+import { renderWithApp } from "../test/render";
 import { VotingStage } from "./VotingStage";
 
 vi.mock("../services/lobby", () => ({
   setSingleVote: vi.fn(() => Promise.resolve()),
   setMultiVote: vi.fn(() => Promise.resolve()),
   setStage: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock("../hooks/useTmdb", () => ({
+  useTrending: () => ({ status: "loading" }),
+  useMovieExtras: () => ({ status: "loading" }),
 }));
 
 beforeEach(() => vi.clearAllMocks());
@@ -19,37 +25,40 @@ function lobby(overrides: Partial<Lobby> = {}): Lobby {
     createdAt: 1,
     settings: { numMovies: 2, unlimitedVotes: false },
     stage: "VOTING",
-    members: { host: 1, me: 1 },
+    members: { host: { name: "Hana", joinedAt: 1 }, me: { name: "Max", joinedAt: 2 } },
     picks: { host: { "348": { title: "Alien" } }, me: { "603": { title: "The Matrix" } } },
     ...overrides,
   };
 }
 
-const card = (name: RegExp) => screen.getByRole("button", { name });
+const card = (name: string) => screen.getByRole("button", { name });
+const view = (l: Lobby, uid = "me", canAct = true) =>
+  renderWithApp(<VotingStage code="ABC234" lobby={l} uid={uid} canAct={canAct} />);
 
 describe("VotingStage, single vote", () => {
   it("can vote again after withdrawing a vote", async () => {
     // Regression: the old VoteCard replaced its state with `true` on un-vote, which blocked all later votes.
     const user = userEvent.setup();
-    const { rerender } = render(<VotingStage code="ABC234" lobby={lobby()} uid="me" canAct />);
-
-    await user.click(card(/Alien/));
+    const first = view(lobby());
+    await user.click(card("Alien"));
     expect(setSingleVote).toHaveBeenLastCalledWith("ABC234", "me", "348");
+    first.unmount();
 
-    rerender(<VotingStage code="ABC234" lobby={lobby({ votes: { me: "348" } })} uid="me" canAct />);
-    expect(card(/Alien/)).toHaveAttribute("aria-pressed", "true");
-    await user.click(card(/Alien/));
+    const voted = view(lobby({ votes: { me: "348" } }));
+    expect(card("Alien")).toHaveAttribute("aria-pressed", "true");
+    await user.click(card("Alien"));
     expect(setSingleVote).toHaveBeenLastCalledWith("ABC234", "me", null);
+    voted.unmount();
 
-    rerender(<VotingStage code="ABC234" lobby={lobby()} uid="me" canAct />);
-    await user.click(card(/Matrix/));
+    view(lobby());
+    await user.click(card("The Matrix"));
     expect(setSingleVote).toHaveBeenLastCalledWith("ABC234", "me", "603");
   });
 
-  it("moves the vote when another movie is clicked", async () => {
+  it("moves the vote when another movie is tapped", async () => {
     const user = userEvent.setup();
-    render(<VotingStage code="ABC234" lobby={lobby({ votes: { me: "348" } })} uid="me" canAct />);
-    await user.click(card(/Matrix/));
+    view(lobby({ votes: { me: "348" } }));
+    await user.click(card("The Matrix"));
     expect(setSingleVote).toHaveBeenLastCalledWith("ABC234", "me", "603");
   });
 });
@@ -58,34 +67,39 @@ describe("VotingStage, unlimited votes", () => {
   it("toggles each movie independently", async () => {
     const user = userEvent.setup();
     const settings = { numMovies: 2, unlimitedVotes: true };
-    render(
-      <VotingStage code="ABC234" lobby={lobby({ settings, votes: { me: { "348": true } } })} uid="me" canAct />,
-    );
-    await user.click(card(/Matrix/));
+    view(lobby({ settings, votes: { me: { "348": true } } }));
+    await user.click(card("The Matrix"));
     expect(setMultiVote).toHaveBeenLastCalledWith("ABC234", "me", "603", true);
-    await user.click(card(/Alien/));
+    await user.click(card("Alien"));
     expect(setMultiVote).toHaveBeenLastCalledWith("ABC234", "me", "348", false);
   });
 });
 
-describe("VotingStage, host controls", () => {
-  it("shows End vote only to the host", async () => {
+describe("VotingStage, status and host controls", () => {
+  it("shows the reveal button only to the host", async () => {
     const user = userEvent.setup();
-    const { rerender } = render(<VotingStage code="ABC234" lobby={lobby()} uid="me" canAct />);
-    expect(screen.queryByRole("button", { name: "End vote" })).not.toBeInTheDocument();
+    const guest = view(lobby());
+    expect(screen.queryByRole("button", { name: /Reveal winner/ })).not.toBeInTheDocument();
+    guest.unmount();
 
-    rerender(<VotingStage code="ABC234" lobby={lobby()} uid="host" canAct />);
-    await user.click(screen.getByRole("button", { name: "End vote" }));
+    view(lobby(), "host");
+    await user.click(screen.getByRole("button", { name: /Reveal winner/ }));
     expect(setStage).toHaveBeenCalledWith("ABC234", "DONE");
   });
 
-  it("shows how many players have voted", () => {
-    render(<VotingStage code="ABC234" lobby={lobby({ votes: { host: "348" } })} uid="me" canAct />);
-    expect(screen.getByText(/of 2 players have voted/)).toHaveTextContent("1 of 2 players have voted");
+  it("shows who has voted", () => {
+    view(lobby({ votes: { host: "348" } }));
+    expect(screen.getByText("1 of 2 voted")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Hana" })).toBeInTheDocument();
+  });
+
+  it("says when everyone is in", () => {
+    view(lobby({ votes: { host: "348", me: "603" } }));
+    expect(screen.getByText("Everyone's in!")).toBeInTheDocument();
   });
 
   it("disables voting until the user has joined", () => {
-    render(<VotingStage code="ABC234" lobby={lobby()} uid="me" canAct={false} />);
-    expect(card(/Alien/)).toBeDisabled();
+    view(lobby(), "me", false);
+    expect(card("Alien")).toBeDisabled();
   });
 });

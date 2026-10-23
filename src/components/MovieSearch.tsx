@@ -1,93 +1,128 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Spinner } from "react-bootstrap";
+import { Search, X } from "lucide-react";
+import { useEffect, useState, type FormEvent } from "react";
+import { useDebouncedValue } from "../hooks/useDebouncedValue";
+import { useTrending } from "../hooks/useTmdb";
 import { searchMovies } from "../lib/tmdb";
 import type { Movie } from "../lib/types";
 import { MovieCard } from "./MovieCard";
+import { Spinner } from "./ui/Spinner";
 
-type SearchState =
-  | { status: "idle" }
-  | { status: "loading" }
-  | { status: "done"; query: string; results: Movie[] }
-  | { status: "error"; message: string };
+type SearchResult = { query: string; movies: Movie[] } | { query: string; error: string };
 
 interface Props {
   isSelected: (movieId: string) => boolean;
   onToggle: (movie: Movie) => void;
+  onInfo: (movie: Movie) => void;
   disabled?: boolean;
 }
 
-export function MovieSearch({ isSelected, onToggle, disabled }: Props) {
+const DEBOUNCE_MS = 350;
+
+/** Search-as-you-type, with this week's popular movies before anything is typed. */
+export function MovieSearch({ isSelected, onToggle, onInfo, disabled }: Props) {
   const [query, setQuery] = useState("");
-  const [state, setState] = useState<SearchState>({ status: "idle" });
-  const inFlight = useRef<AbortController | null>(null);
+  const trimmed = query.trim();
+  const debounced = useDebouncedValue(trimmed, DEBOUNCE_MS);
+  // Pressing Enter searches right away instead of waiting out the debounce.
+  const [submitted, setSubmitted] = useState("");
+  const active = submitted === trimmed ? submitted : debounced;
+  const [result, setResult] = useState<SearchResult | null>(null);
+  const trending = useTrending();
 
-  useEffect(() => () => inFlight.current?.abort(), []);
-
-  const search = async (e: FormEvent) => {
-    e.preventDefault();
-    const trimmed = query.trim();
-    if (!trimmed) return;
-    // Drop any older search so its late results can't replace these.
-    inFlight.current?.abort();
+  useEffect(() => {
+    if (!active) return;
     const controller = new AbortController();
-    inFlight.current = controller;
-    setState({ status: "loading" });
-    try {
-      const results = await searchMovies(trimmed, { signal: controller.signal });
-      setState({ status: "done", query: trimmed, results });
-    } catch (err) {
-      if (controller.signal.aborted) return;
-      setState({ status: "error", message: err instanceof Error ? err.message : "Search failed." });
-    }
+    searchMovies(active, { signal: controller.signal }).then(
+      (movies) => setResult({ query: active, movies }),
+      (err: unknown) => {
+        if (controller.signal.aborted) return;
+        setResult({ query: active, error: err instanceof Error ? err.message : "Search failed." });
+      },
+    );
+    return () => controller.abort();
+  }, [active]);
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    setSubmitted(trimmed);
+    // Close the phone keyboard so the results are visible.
+    (document.activeElement as HTMLElement | null)?.blur();
   };
 
+  const grid = (movies: Movie[]) => (
+    <div className="movie-grid">
+      {movies.map((movie) => (
+        <MovieCard
+          key={movie.id}
+          movie={movie}
+          selected={isSelected(movie.id)}
+          actionLabel="Pick"
+          selectedLabel="Picked"
+          onToggle={() => onToggle(movie)}
+          onInfo={() => onInfo(movie)}
+          disabled={disabled}
+        />
+      ))}
+    </div>
+  );
+
+  let body;
+  if (!trimmed) {
+    body =
+      trending.status === "ready" && trending.data.length > 0 ? (
+        <>
+          <div className="section-head">
+            <h3>Popular this week</h3>
+          </div>
+          {grid(trending.data)}
+        </>
+      ) : trending.status === "loading" ? (
+        <div className="empty">
+          <Spinner label="Loading popular movies…" />
+        </div>
+      ) : (
+        <p className="empty">Search for a movie you'd like to watch.</p>
+      );
+  } else if (!result || result.query !== trimmed) {
+    body = (
+      <div className="empty">
+        <Spinner label="Searching…" />
+      </div>
+    );
+  } else if ("error" in result) {
+    body = (
+      <div className="alert" role="alert">
+        {result.error}
+      </div>
+    );
+  } else if (result.movies.length === 0) {
+    body = <p className="empty">No movies found for “{result.query}”. Try another title?</p>;
+  } else {
+    body = grid(result.movies);
+  }
+
   return (
-    <section aria-label="Search movies">
-      <form className="input-group" onSubmit={search} role="search">
+    <section aria-label="Find movies">
+      <form className="search-bar input-with-icon" onSubmit={submit} role="search">
+        <Search size={20} aria-hidden="true" />
         <input
-          className="form-control pill-input"
+          className="input"
           type="search"
           placeholder="Search for a movie…"
           aria-label="Movie title"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          enterKeyHint="search"
+          autoComplete="off"
         />
-        <button className="btn btn-primary pill-input-button" type="submit" aria-label="Search">
-          <span className="material-symbols-outlined icon-inline" aria-hidden="true">
-            search
-          </span>
-        </button>
+        {query && (
+          <button type="button" className="icon-btn btn-ghost search-clear" onClick={() => setQuery("")} aria-label="Clear search">
+            <X size={18} />
+          </button>
+        )}
       </form>
-
-      <div className="search-results" aria-live="polite">
-        {state.status === "idle" && <p className="search-hint">Search for movies you'd like to watch.</p>}
-        {state.status === "loading" && (
-          <div className="search-hint">
-            <Spinner animation="border" size="sm" role="status" /> Searching…
-          </div>
-        )}
-        {state.status === "error" && (
-          <div className="alert alert-warning" role="alert">
-            {state.message}
-          </div>
-        )}
-        {state.status === "done" && state.results.length === 0 && (
-          <p className="search-hint">No movies found for "{state.query}".</p>
-        )}
-        {state.status === "done" && state.results.length > 0 && (
-          <div className="movie-grid">
-            {state.results.map((movie) => (
-              <MovieCard
-                key={movie.id}
-                movie={movie}
-                selected={isSelected(movie.id)}
-                actionLabel="Select"
-                onClick={() => onToggle(movie)}
-                disabled={disabled}
-              />
-            ))}
-          </div>
-        )}
+      <div className="section" aria-live="polite">
+        {body}
       </div>
     </section>
   );
