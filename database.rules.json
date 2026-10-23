@@ -1,0 +1,75 @@
+{
+  "rules": {
+    "lobbies": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && !data.exists() && newData.child('hostId').val() === auth.uid",
+        ".validate": "$code.matches(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/) && newData.hasChildren(['hostId', 'createdAt', 'settings', 'stage']) && (data.exists() || (!newData.child('picks').exists() && !newData.child('votes').exists()))",
+        "hostId": {
+          ".validate": "newData.isString()"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber() && newData.val() === now"
+        },
+        "settings": {
+          ".validate": "newData.hasChildren(['numMovies', 'unlimitedVotes'])",
+          "numMovies": {
+            ".validate": "newData.isNumber() && newData.val() >= 2 && newData.val() <= 5"
+          },
+          "unlimitedVotes": {
+            ".validate": "newData.isBoolean()"
+          },
+          "$other": {
+            ".validate": false
+          }
+        },
+        "stage": {
+          ".write": "auth != null && data.parent().child('hostId').val() === auth.uid",
+          ".validate": "(!data.exists() && newData.val() === 'PICKING') || (data.val() === 'PICKING' && newData.val() === 'VOTING') || (data.val() === 'VOTING' && newData.val() === 'DONE')"
+        },
+        "members": {
+          "$uid": {
+            ".write": "auth != null && $uid === auth.uid",
+            ".validate": "$uid === auth.uid && newData.isNumber()"
+          }
+        },
+        "picks": {
+          "$uid": {
+            ".write": "auth != null && $uid === auth.uid && root.child('lobbies/' + $code + '/stage').val() === 'PICKING' && root.child('lobbies/' + $code + '/members/' + auth.uid).exists()",
+            ".validate": "newData.hasChildren()",
+            "$movieId": {
+              ".validate": "$movieId.matches(/^[0-9]{1,10}$/) && newData.hasChild('title')",
+              "title": {
+                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 300"
+              },
+              "year": {
+                ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}$/)"
+              },
+              "posterPath": {
+                ".validate": "newData.isString() && newData.val().matches(/^\\/[A-Za-z0-9_.-]{1,100}$/)"
+              },
+              "overview": {
+                ".validate": "newData.isString() && newData.val().length <= 2000"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          }
+        },
+        "votes": {
+          "$uid": {
+            ".write": "auth != null && $uid === auth.uid && root.child('lobbies/' + $code + '/stage').val() === 'VOTING' && root.child('lobbies/' + $code + '/members/' + auth.uid).exists()",
+            ".validate": "(root.child('lobbies/' + $code + '/settings/unlimitedVotes').val() === true && newData.hasChildren()) || (root.child('lobbies/' + $code + '/settings/unlimitedVotes').val() === false && newData.isString() && newData.val().matches(/^[0-9]{1,10}$/))",
+            "$movieId": {
+              ".validate": "$movieId.matches(/^[0-9]{1,10}$/) && newData.val() === true"
+            }
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    }
+  }
+}
