@@ -655,25 +655,45 @@ select {
 
 /* ---------- Home ---------- */
 
-.hero {
-  position: relative;
-  display: grid;
-  gap: 28px;
-  padding: clamp(28px, 8vw, 88px) 0 24px;
-}
-
+/*
+ * The illustration (an outdoor movie night) is the star here, so the overlay
+ * stays light: a soft dark glow just behind the text keeps it readable over the
+ * bright screen, and the edges fade only enough to frame the page.
+ */
 .hero-bg {
   position: fixed;
   inset: 0;
   z-index: -1;
   background:
-    linear-gradient(180deg, rgba(18, 20, 24, 0.75), rgba(18, 20, 24, 0.94) 55%, var(--bg)),
-    url("./assets/background-official-flipped.jpg") center / cover no-repeat;
+    radial-gradient(ellipse 70% 55% at 50% 42%, rgba(12, 13, 17, 0.72), rgba(12, 13, 17, 0.38) 60%, rgba(12, 13, 17, 0.1) 100%),
+    linear-gradient(180deg, rgba(18, 20, 24, 0.55), rgba(18, 20, 24, 0) 30%, rgba(18, 20, 24, 0) 70%, rgba(18, 20, 24, 0.6)),
+    url("./assets/background-official-flipped.jpg") 60% 55% / cover no-repeat;
+}
+
+.hero {
+  min-height: calc(100dvh - 120px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: clamp(24px, 6vh, 64px) 0;
+  text-align: center;
+}
+
+.hero-title,
+.hero-tagline,
+.hero .eyebrow,
+.how-steps {
+  text-shadow:
+    0 2px 18px rgba(0, 0, 0, 0.75),
+    0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
 .hero-title {
-  max-width: 12ch;
-  margin: 0;
+  max-width: 14ch;
+  margin: 0 auto;
+  font-size: clamp(2.8rem, 9vw, 5.5rem);
 }
 
 .hero-title em {
@@ -682,35 +702,93 @@ select {
 }
 
 .hero-tagline {
+  max-width: 36ch;
+  margin: 0 auto;
   font-size: clamp(1.05rem, 2.4vw, 1.3rem);
-  color: var(--text-muted);
-  max-width: 34ch;
-  margin: 0;
+  color: #e6e5df;
 }
 
-.hero-actions {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-  gap: 16px;
-  max-width: 820px;
-}
-
-.action-card {
+.hero-cta {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  min-width: 0;
+  align-items: center;
+  gap: 14px;
+  width: min(100%, 400px);
+  margin-top: 8px;
 }
 
-.action-card h3 {
-  margin: 0;
+.hero-cta > .btn {
+  width: 100%;
+  min-height: 58px;
+  font-size: 1.15rem;
+}
+
+/* See-through secondary button that lets the background show. */
+.btn-frost {
+  --btn-bg: rgba(18, 20, 24, 0.5);
+  --btn-border: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.btn-frost:hover {
+  --btn-bg: rgba(18, 20, 24, 0.7);
+  --btn-border: rgba(255, 255, 255, 0.4);
+}
+
+/* A slim frosted pill: the code field with its button attached. */
+.join-inline {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  animation: dialog-in 0.18s ease-out;
+  padding: 5px;
+  border-radius: 999px;
+  background: rgba(18, 20, 24, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.join-inline:focus-within {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 4px var(--accent-soft),
+    0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.join-inline .input {
+  flex: 1 1 0;
+  width: 0;
+  min-height: 46px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 1.3rem;
+}
+
+.join-inline .input:focus {
+  box-shadow: none;
+}
+
+.join-inline .btn {
+  flex: none;
+  min-height: 46px;
 }
 
 .recent {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+}
+
+.recent .muted {
+  color: #d9d8d2;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
 }
 
 .chip {
@@ -721,7 +799,9 @@ select {
   padding: 0.3rem 0.85rem;
   border-radius: 999px;
   border: 1px solid var(--border-strong);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(18, 20, 24, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: var(--text);
   text-decoration: none;
   font-weight: 600;
@@ -737,40 +817,45 @@ select {
   letter-spacing: 0.12em;
 }
 
-.how-it-works {
+/* How it works: four plain steps, no boxes. */
+.how-steps {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
-  gap: 14px;
-  margin: 8px 0 0;
-  padding: 0;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+  gap: 22px 28px;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 8px 0 24px;
   list-style: none;
-  counter-reset: step;
+  text-align: center;
 }
 
-.how-it-works li {
+.how-steps li {
   display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  padding: 16px;
-  border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border);
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
 }
 
-.how-it-works .step-icon {
-  flex: none;
+.how-steps .step-icon {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: var(--accent-soft);
-  color: var(--accent);
+  width: 46px;
+  height: 46px;
+  margin-bottom: 4px;
+  border-radius: 999px;
+  background: rgba(255, 117, 59, 0.92);
+  color: var(--accent-ink);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
 }
 
-.how-it-works strong {
-  display: block;
-  margin-bottom: 2px;
+.how-steps strong {
+  font-size: 1.05rem;
+}
+
+.how-steps span.text {
+  color: #e6e5df;
+  font-size: 0.92rem;
+  max-width: 26ch;
 }
 
 /* ---------- Setup ---------- */

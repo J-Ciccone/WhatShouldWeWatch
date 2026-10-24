@@ -13,19 +13,28 @@ beforeEach(() => vi.clearAllMocks());
 afterEach(() => localStorage.clear());
 
 describe("HomePage", () => {
+  it("offers hosting or entering a code, with no code box until asked", () => {
+    renderWithApp(<HomePage />);
+    expect(screen.getByRole("link", { name: /Host a movie night/ })).toHaveAttribute("href", "/new");
+    expect(screen.getByRole("button", { name: /Enter a code/ })).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Enter the code/)).not.toBeInTheDocument();
+  });
+
   it("joins with a typed code", async () => {
     const user = userEvent.setup();
     renderWithApp(<HomePage />);
-    const join = screen.getByRole("button", { name: /Join/ });
-    expect(join).toBeDisabled();
-    await user.type(screen.getByLabelText(/Enter the code/), "abc234{Enter}");
+    await user.click(screen.getByRole("button", { name: /Enter a code/ }));
+    const input = screen.getByLabelText(/Enter the code/);
+    expect(input).toHaveFocus();
+    expect(screen.getByRole("button", { name: /Join/ })).toBeDisabled();
+    await user.type(input, "abc234{Enter}");
     expect(screen.getByTestId("location")).toHaveTextContent("/lobby/ABC234");
   });
 
   it("joins with a pasted invite link", async () => {
     const user = userEvent.setup();
     renderWithApp(<HomePage />);
-    await user.click(screen.getByLabelText(/Enter the code/));
+    await user.click(screen.getByRole("button", { name: /Enter a code/ }));
     await user.paste("https://mymoviepicker.web.app/lobby/XYZ789");
     await user.click(screen.getByRole("button", { name: /Join/ }));
     expect(screen.getByTestId("location")).toHaveTextContent("/lobby/XYZ789");

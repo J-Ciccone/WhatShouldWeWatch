@@ -1,4 +1,4 @@
-import { ChevronRight, Film, LogIn, Popcorn, Users, Vote } from "lucide-react";
+import { ChevronRight, Film, KeyRound, Popcorn, Users, Vote } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { isValidLobbyCode, normalizeLobbyCode } from "../lib/lobbyCode";
@@ -14,6 +14,7 @@ const STEPS = [
 export function HomePage() {
   const navigate = useNavigate();
   const [code, setCode] = useState("");
+  const [entering, setEntering] = useState(false);
   const [recent] = useState(recentLobbies);
   const normalized = normalizeLobbyCode(code);
   const valid = isValidLobbyCode(normalized);
@@ -27,75 +28,79 @@ export function HomePage() {
     <>
       <div className="hero-bg" aria-hidden="true" />
       <section className="hero">
-        <div>
-          <p className="eyebrow">Movie night, sorted</p>
-          <h1 className="hero-title">
-            What should we <em>watch?</em>
-          </h1>
-          <p className="hero-tagline">
-            Everyone picks a few movies, you all vote, and tonight's winner is on screen in minutes.
-          </p>
-        </div>
+        <p className="eyebrow" style={{ margin: 0 }}>
+          Movie night, sorted
+        </p>
+        <h1 className="hero-title">
+          What should we <em>watch?</em>
+        </h1>
+        <p className="hero-tagline">
+          Everyone picks a few movies, you all vote, and tonight's winner is on screen in minutes.
+        </p>
 
-        <div className="hero-actions">
-          <div className="card action-card">
-            <h3>Host a movie night</h3>
-            <p className="muted" style={{ margin: 0 }}>
-              Create a lobby and invite your friends.
-            </p>
-            <Link to="/new" className="btn btn-primary btn-lg">
-              Start a vote <ChevronRight size={20} />
-            </Link>
-          </div>
+        <div className="hero-cta">
+          <Link to="/new" className="btn btn-primary btn-lg">
+            <Popcorn size={20} /> Host a movie night
+          </Link>
 
-          <form className="card action-card" onSubmit={join}>
-            <h3>Join your friends</h3>
-            <label htmlFor="lobby-code" className="muted">
-              Enter the code, or paste the invite link.
-            </label>
-            <input
-              id="lobby-code"
-              className="input code-input"
-              placeholder="ABC123"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              maxLength={200}
-              autoComplete="off"
-              autoCapitalize="characters"
-              autoCorrect="off"
-              spellCheck={false}
-              enterKeyHint="go"
-            />
-            <button className="btn btn-lg" type="submit" disabled={!valid}>
-              <LogIn size={20} /> Join
+          {/* The code field only appears once someone says they have a code. */}
+          {entering ? (
+            <form className="join-inline" onSubmit={join}>
+              <label htmlFor="lobby-code" className="visually-hidden">
+                Enter the code, or paste the invite link
+              </label>
+              <input
+                id="lobby-code"
+                className="input code-input"
+                placeholder="Code"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape" && !code) setEntering(false);
+                }}
+                maxLength={200}
+                autoComplete="off"
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="go"
+                autoFocus
+              />
+              <button className="btn btn-primary" type="submit" disabled={!valid}>
+                Join <ChevronRight size={18} />
+              </button>
+            </form>
+          ) : (
+            <button type="button" className="btn btn-lg btn-frost" onClick={() => setEntering(true)}>
+              <KeyRound size={20} /> Enter a code
             </button>
-          </form>
-        </div>
+          )}
 
-        {recent.length > 0 && (
-          <div className="recent">
-            <span className="muted small">Jump back in:</span>
-            {recent.map((c) => (
-              <Link key={c} to={`/lobby/${c}`} className="chip chip-code">
-                {c}
-              </Link>
-            ))}
-          </div>
-        )}
+          {recent.length > 0 && (
+            <div className="recent">
+              <span className="muted small">Jump back in:</span>
+              {recent.map((c) => (
+                <Link key={c} to={`/lobby/${c}`} className="chip chip-code">
+                  {c}
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
       </section>
 
-      <section className="section" aria-labelledby="how-heading">
-        <h3 id="how-heading">How it works</h3>
-        <ol className="how-it-works">
+      <section aria-labelledby="how-heading">
+        <h3 id="how-heading" className="visually-hidden">
+          How it works
+        </h3>
+        <ol className="how-steps">
           {STEPS.map(({ Icon, title, text }) => (
             <li key={title}>
               <span className="step-icon" aria-hidden="true">
                 <Icon size={22} />
               </span>
-              <span>
-                <strong>{title}</strong>
-                <span className="muted small">{text}</span>
-              </span>
+              <strong>{title}</strong>
+              <span className="text">{text}</span>
             </li>
           ))}
         </ol>
