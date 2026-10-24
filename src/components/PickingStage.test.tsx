@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { searchMovies } from "../lib/tmdb";
 import type { Lobby } from "../lib/types";
-import { addPick, removePick, setStage } from "../services/lobby";
+import { addPick, pickAtRandom, removePick, setStage } from "../services/lobby";
 import { renderWithApp } from "../test/render";
 import { PickingStage } from "./PickingStage";
 
@@ -11,6 +11,7 @@ vi.mock("../services/lobby", () => ({
   addPick: vi.fn(() => Promise.resolve()),
   removePick: vi.fn(() => Promise.resolve()),
   setStage: vi.fn(() => Promise.resolve()),
+  pickAtRandom: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock("../lib/tmdb", async (importOriginal) => ({
@@ -122,6 +123,51 @@ describe("PickingStage", () => {
     view(lobby({ picks: twoPicks }), "me");
     expect(screen.queryByRole("button", { name: /Start voting/ })).not.toBeInTheDocument();
     expect(screen.getByText("The host starts the vote")).toBeInTheDocument();
+  });
+
+  it("lets the host skip the vote and pick one of the group's movies at random, after confirming", async () => {
+    const user = userEvent.setup();
+    const twoPicks = { host: { "348": { title: "Alien" } }, me: { "603": { title: "The Matrix" } } };
+    view(lobby({ picks: twoPicks }), "host");
+
+    await user.click(screen.getByRole("button", { name: "Pick at random" }));
+    const dialog = screen.getByRole("dialog", { name: "Skip the vote?" });
+    expect(dialog).toHaveTextContent("one of the group's 2 movies");
+
+    await user.click(within(dialog).getByRole("button", { name: "Keep picking" }));
+    expect(pickAtRandom).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Pick at random" }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: /Pick at random/ }));
+    const [, pick] = vi.mocked(pickAtRandom).mock.calls[0]!;
+    // Records whose pick it was, so the rules can check it's still in the pool.
+    expect([
+      { movieId: "348", pickedBy: "host" },
+      { movieId: "603", pickedBy: "me" },
+    ]).toContainEqual(pick);
+  });
+
+  it("won't pick at random if the pool shrinks below two while the confirm sheet is open", async () => {
+    const user = userEvent.setup();
+    const twoPicks = { host: { "348": { title: "Alien" } }, me: { "603": { title: "The Matrix" } } };
+    const { rerender } = view(lobby({ picks: twoPicks }), "host");
+    await user.click(screen.getByRole("button", { name: "Pick at random" }));
+
+    rerender(<PickingStage code="ABC234" lobby={lobby({ picks: { host: { "348": { title: "Alien" } } } })} uid="host" canAct />);
+    const dialog = screen.getByRole("dialog", { name: "Skip the vote?" });
+    expect(dialog).toHaveTextContent("needs at least 2 movies");
+    expect(within(dialog).getByRole("button", { name: /Pick at random/ })).toBeDisabled();
+  });
+
+  it("only offers the random pick to the host, once there are enough movies", () => {
+    const onePick = { host: { "348": { title: "Alien" } } };
+    const { unmount } = view(lobby({ picks: onePick }), "host");
+    expect(screen.queryByRole("button", { name: "Pick at random" })).not.toBeInTheDocument();
+    unmount();
+
+    const twoPicks = { host: { "348": { title: "Alien" } }, me: { "603": { title: "The Matrix" } } };
+    view(lobby({ picks: twoPicks }), "me");
+    expect(screen.queryByRole("button", { name: "Pick at random" })).not.toBeInTheDocument();
   });
 
   it("tells the host when everyone has finished picking", () => {

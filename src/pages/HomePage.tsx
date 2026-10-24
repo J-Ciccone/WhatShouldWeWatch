@@ -7,7 +7,7 @@ import { recentLobbies } from "../lib/recentLobbies";
 const STEPS = [
   { Icon: Users, title: "Start a lobby", text: "Share the code or QR with your friends. No sign-up needed." },
   { Icon: Film, title: "Everyone picks", text: "Search or browse what's popular and add a few favourites." },
-  { Icon: Vote, title: "Vote together", text: "The results appear when the host hits reveal." },
+  { Icon: Vote, title: "Vote together", text: "Or skip the vote and let the app pick one at random." },
   { Icon: Popcorn, title: "Press play", text: "See the winner, the trailer, and where it's streaming." },
 ];
 

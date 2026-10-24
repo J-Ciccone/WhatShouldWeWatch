@@ -126,6 +126,24 @@ describe("LobbyPage", () => {
     expect(recentLobbies()).toEqual(["ABC234"]);
   });
 
+  it("plays the random-pick reveal for people watching, but not after a reload", () => {
+    localStorage.setItem("wsww:name", "Max");
+    const members = { host: { name: "Hana", joinedAt: 1 }, me: { name: "Max", joinedAt: 2 } };
+    const picks = { host: { "348": { title: "Alien" } }, me: { "603": { title: "The Matrix" } } };
+    const done = lobby({ stage: "DONE", members, picks, randomPick: { movieId: "603", pickedBy: "me" } });
+
+    withLobby({ status: "ready", lobby: lobby({ members, picks }) });
+    const { rerender, unmount } = view();
+    withLobby({ status: "ready", lobby: done });
+    rerender(<LobbyPage />);
+    expect(screen.getByRole("heading", { name: "Picking at random…" })).toBeInTheDocument();
+    unmount();
+
+    view();
+    expect(screen.queryByRole("heading", { name: "Picking at random…" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "The Matrix" })).toBeInTheDocument();
+  });
+
   it("cleans up a lowercase or dashed code in the address", () => {
     withLobby({ status: "loading" });
     view("/lobby/abc-234");

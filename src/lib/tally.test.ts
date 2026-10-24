@@ -77,6 +77,12 @@ describe("tally and winners", () => {
     expect(finalWinners({ picks, votes: { ann: "603" }, tiebreak: "348" }).map((w) => w.movie.id)).toEqual(["603"]);
   });
 
+  it("uses the random pick when the vote was skipped", () => {
+    expect(finalWinners({ picks, randomPick: { movieId: "949", pickedBy: "bob" } }).map((w) => w.movie.id)).toEqual(["949"]);
+    // A random pick that isn't in the pool is ignored.
+    expect(finalWinners({ picks, randomPick: { movieId: "999999", pickedBy: "bob" } })).toHaveLength(3);
+  });
+
   it("picks every option eventually and never one outside the list", () => {
     const seen = new Set<string>();
     for (let i = 0; i < 300; i++) seen.add(pickRandom(["a", "b", "c"]));

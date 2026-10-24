@@ -4,7 +4,7 @@
       "$code": {
         ".read": "auth != null",
         ".write": "auth != null && !data.exists() && newData.child('hostId').val() === auth.uid",
-        ".validate": "$code.matches(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/) && newData.hasChildren(['hostId', 'createdAt', 'settings', 'stage']) && (data.exists() || (!newData.child('picks').exists() && !newData.child('votes').exists() && !newData.child('tiebreak').exists() && !newData.child('nextLobby').exists()))",
+        ".validate": "$code.matches(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/) && newData.hasChildren(['hostId', 'createdAt', 'settings', 'stage']) && (data.exists() || (!newData.child('picks').exists() && !newData.child('votes').exists() && !newData.child('tiebreak').exists() && !newData.child('nextLobby').exists() && !newData.child('randomPick').exists()))",
         "hostId": {
           ".validate": "newData.isString()"
         },
@@ -25,7 +25,7 @@
         },
         "stage": {
           ".write": "auth != null && data.parent().child('hostId').val() === auth.uid",
-          ".validate": "(!data.exists() && newData.val() === 'PICKING') || (data.val() === 'PICKING' && newData.val() === 'VOTING') || (data.val() === 'VOTING' && newData.val() === 'DONE')"
+          ".validate": "(!data.exists() && newData.val() === 'PICKING') || (data.val() === 'PICKING' && newData.val() === 'VOTING') || (data.val() === 'VOTING' && newData.val() === 'DONE') || (data.val() === 'PICKING' && newData.val() === 'DONE' && newData.parent().child('randomPick').exists())"
         },
         "members": {
           "$uid": {
@@ -84,6 +84,19 @@
         "tiebreak": {
           ".write": "auth != null && data.parent().child('hostId').val() === auth.uid && !data.exists()",
           ".validate": "root.child('lobbies/' + $code + '/stage').val() === 'DONE' && newData.isString() && newData.val().matches(/^[0-9]{1,10}$/)"
+        },
+        "randomPick": {
+          ".write": "auth != null && data.parent().child('hostId').val() === auth.uid && !data.exists()",
+          ".validate": "data.parent().child('stage').val() === 'PICKING' && newData.parent().child('stage').val() === 'DONE' && newData.hasChildren(['movieId', 'pickedBy']) && root.child('lobbies/' + $code + '/picks/' + newData.child('pickedBy').val() + '/' + newData.child('movieId').val()).exists()",
+          "movieId": {
+            ".validate": "newData.isString() && newData.val().matches(/^[0-9]{1,10}$/)"
+          },
+          "pickedBy": {
+            ".validate": "newData.isString() && newData.val().matches(/^[^\\/.#$\\[\\]]{1,128}$/)"
+          },
+          "$other": {
+            ".validate": false
+          }
         },
         "nextLobby": {
           ".write": "auth != null && data.parent().child('hostId').val() === auth.uid && !data.exists()",

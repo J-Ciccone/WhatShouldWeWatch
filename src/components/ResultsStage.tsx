@@ -2,7 +2,7 @@ import { Dices, Home, RotateCcw, Star } from "lucide-react";
 import { useEffect, useState, type CSSProperties } from "react";
 import { Link, useNavigate } from "react-router";
 import { playerName } from "../lib/players";
-import { finalWinners, pickRandom, tally, winners, type TallyEntry } from "../lib/tally";
+import { finalWinners, pickRandom, randomWinner, tally, winners, type TallyEntry } from "../lib/tally";
 import { imageUrl } from "../lib/tmdb";
 import type { Lobby } from "../lib/types";
 import { setTiebreak, startNextRound } from "../services/lobby";
@@ -15,30 +15,38 @@ interface Props {
   code: string;
   lobby: Lobby;
   uid: string;
+  /** True if this viewer saw the round finish live (so animations should play), not on a reload. */
+  watchedLive?: boolean;
 }
+
+type Decider = "votes" | "tiebreak" | "random";
 
 function prefersReducedMotion() {
   return typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
 }
 
-export function ResultsStage({ code, lobby, uid }: Props) {
+export function ResultsStage({ code, lobby, uid, watchedLive = false }: Props) {
   const toast = useToast();
   const navigate = useNavigate();
   const results = tally(lobby).sort((a, b) => b.votes - a.votes || a.movie.title.localeCompare(b.movie.title));
   const top = winners(lobby);
   const final = finalWinners(lobby);
   const isHost = lobby.hostId === uid;
-  const nobodyVoted = results.length > 0 && top[0]!.votes === 0;
+  const random = randomWinner(lobby) !== undefined;
+  const nobodyVoted = !random && results.length > 0 && top[0]!.votes === 0;
+  const decider: Decider = random ? "random" : top.length > 1 ? "tiebreak" : "votes";
 
-  // Only play the shuffle for people watching when the tie gets broken, not on reload.
+  // Play the shuffle only for people watching when the pick is made, not on reload.
   const [tiebreakAtMount] = useState(lobby.tiebreak);
   const [reducedMotion] = useState(prefersReducedMotion);
   const [shuffleDone, setShuffleDone] = useState(false);
-  const shuffling = !tiebreakAtMount && Boolean(lobby.tiebreak) && top.length > 1 && !shuffleDone && !reducedMotion;
+  const tiebreakArrived = !random && !tiebreakAtMount && Boolean(lobby.tiebreak) && top.length > 1;
+  const randomArrived = random && watchedLive;
+  const shuffling = (tiebreakArrived || randomArrived) && !shuffleDone && !reducedMotion;
   const [starting, setStarting] = useState(false);
 
   const winner = !nobodyVoted && final.length === 1 && !shuffling ? final[0]! : null;
-  const isTie = !nobodyVoted && final.length > 1;
+  const isTie = !nobodyVoted && !random && final.length > 1;
 
   const breakTie = () =>
     setTiebreak(code, pickRandom(top).movie.id).catch(() => toast("Couldn't break the tie. Try again.", "error"));
@@ -82,7 +90,13 @@ export function ResultsStage({ code, lobby, uid }: Props) {
       )}
 
       {shuffling && (
-        <TieShuffle candidates={top} chosenId={lobby.tiebreak!} onDone={() => setShuffleDone(true)} />
+        <Shuffle
+          candidates={random ? results : top}
+          chosenId={random ? lobby.randomPick!.movieId : lobby.tiebreak!}
+          eyebrow={random ? "Skipping the vote" : "Breaking the tie"}
+          title={random ? "Picking at random…" : "Let fate decide…"}
+          onDone={() => setShuffleDone(true)}
+        />
       )}
 
       {isTie && !shuffling && (
@@ -111,11 +125,11 @@ export function ResultsStage({ code, lobby, uid }: Props) {
       {winner && (
         <>
           <Confetti key={winner.movie.id} />
-          <WinnerHero entry={winner} byFate={top.length > 1} />
+          <WinnerHero entry={winner} decider={decider} />
         </>
       )}
 
-      {results.length > 0 && (
+      {results.length > 0 && !random && (
         <section className="section card" aria-label="Vote results">
           <h3>The votes</h3>
           <VoteBars results={results} winnerIds={winner ? [winner.movie.id] : top.map((t) => t.movie.id)} />
@@ -141,7 +155,13 @@ export function ResultsStage({ code, lobby, uid }: Props) {
   );
 }
 
-function WinnerHero({ entry, byFate }: { entry: TallyEntry; byFate: boolean }) {
+const EYEBROW: Record<Decider, string> = {
+  votes: "Tonight we're watching",
+  tiebreak: "Fate has spoken. Tonight it's…",
+  random: "Picked at random. Tonight it's…",
+};
+
+function WinnerHero({ entry, decider }: { entry: TallyEntry; decider: Decider }) {
   const { movie, votes } = entry;
   const backdrop = imageUrl(movie.backdropPath, "w1280") ?? imageUrl(movie.posterPath, "w780");
   return (
@@ -152,7 +172,7 @@ function WinnerHero({ entry, byFate }: { entry: TallyEntry; byFate: boolean }) {
           {movie.posterPath && <img src={imageUrl(movie.posterPath, "w500")} alt={`${movie.title} poster`} />}
         </div>
         <div>
-          <p className="eyebrow">{byFate ? "Fate has spoken. Tonight it's…" : "Tonight we're watching"}</p>
+          <p className="eyebrow">{EYEBROW[decider]}</p>
           <h2 className="winner-title">{movie.title}</h2>
           <div className="details-meta">
             {movie.year && <span>{movie.year}</span>}
@@ -161,9 +181,11 @@ function WinnerHero({ entry, byFate }: { entry: TallyEntry; byFate: boolean }) {
                 <Star size={14} fill="currentColor" aria-hidden="true" /> {movie.rating.toFixed(1)}
               </span>
             )}
-            <span>
-              {votes} {votes === 1 ? "vote" : "votes"}
-            </span>
+            {decider !== "random" && (
+              <span>
+                {votes} {votes === 1 ? "vote" : "votes"}
+              </span>
+            )}
           </div>
           {movie.overview && <p>{movie.overview}</p>}
           <div className="winner-actions">
@@ -190,13 +212,32 @@ function TiePoster({ entry, lit }: { entry: TallyEntry; lit?: boolean }) {
   );
 }
 
-/** Flicks a highlight across the tied movies and lands on the one the host's coin toss chose. */
-function TieShuffle({ candidates, chosenId, onDone }: { candidates: TallyEntry[]; chosenId: string; onDone: () => void }) {
+/**
+ * Flicks a highlight across the candidates and lands on the one already chosen
+ * (by the host's tie-break or random pick). Takes about 2–3.5 seconds however
+ * many movies there are.
+ */
+function Shuffle({
+  candidates,
+  chosenId,
+  eyebrow,
+  title,
+  onDone,
+}: {
+  candidates: TallyEntry[];
+  chosenId: string;
+  eyebrow: string;
+  title: string;
+  onDone: () => void;
+}) {
   const [step, setStep] = useState(0);
 
   useEffect(() => {
-    const chosen = candidates.findIndex((c) => c.movie.id === chosenId);
-    const total = candidates.length * 3 + Math.max(0, chosen);
+    const count = Math.max(1, candidates.length);
+    const chosen = Math.max(0, candidates.findIndex((c) => c.movie.id === chosenId));
+    // Whole laps around the list, then stop on the chosen one.
+    const total = count * Math.ceil(16 / count) + chosen;
+    const interval = Math.max(70, Math.min(140, 2800 / total));
     let n = 0;
     let finish: ReturnType<typeof setTimeout> | undefined;
     const timer = setInterval(() => {
@@ -206,7 +247,7 @@ function TieShuffle({ candidates, chosenId, onDone }: { candidates: TallyEntry[]
         clearInterval(timer);
         finish = setTimeout(onDone, 700);
       }
-    }, 140);
+    }, interval);
     return () => {
       clearInterval(timer);
       clearTimeout(finish);
@@ -217,8 +258,8 @@ function TieShuffle({ candidates, chosenId, onDone }: { candidates: TallyEntry[]
 
   return (
     <div className="card" style={{ textAlign: "center" }}>
-      <p className="eyebrow">Breaking the tie</p>
-      <h2>Let fate decide…</h2>
+      <p className="eyebrow">{eyebrow}</p>
+      <h2>{title}</h2>
       <div className="tie-grid section">
         {candidates.map((t, i) => (
           <TiePoster key={t.movie.id} entry={t} lit={step % candidates.length === i} />

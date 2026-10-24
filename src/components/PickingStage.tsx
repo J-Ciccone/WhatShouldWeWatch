@@ -1,15 +1,16 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Dices } from "lucide-react";
 import { useState } from "react";
 import { isPlayerDone, playersOf } from "../lib/players";
-import { moviePool } from "../lib/tally";
+import { moviePool, pickRandom } from "../lib/tally";
 import { MIN_MOVIES_TO_VOTE, type Lobby, type Movie } from "../lib/types";
-import { addPick, removePick, setStage } from "../services/lobby";
+import { addPick, pickAtRandom, removePick, setStage } from "../services/lobby";
 import { MovieCard } from "./MovieCard";
 import { MovieDetailsDialog } from "./MovieDetailsDialog";
 import { MovieSearch } from "./MovieSearch";
 import { PicksTray } from "./PicksTray";
 import { ActionBar } from "./ui/ActionBar";
 import { AvatarStack } from "./ui/Avatar";
+import { Dialog } from "./ui/Dialog";
 import { useToast } from "./ui/toastContext";
 
 interface Props {
@@ -25,6 +26,8 @@ export function PickingStage({ code, lobby, uid, canAct }: Props) {
   // Movie ids with a pick write still in flight, so fast taps can't overshoot the limit.
   const [pendingAdds, setPendingAdds] = useState<ReadonlySet<string>>(new Set());
   const [details, setDetails] = useState<Movie | null>(null);
+  const [confirmRandom, setConfirmRandom] = useState(false);
+  const [pickingRandom, setPickingRandom] = useState(false);
 
   const myPicks = lobby.picks?.[uid] ?? {};
   const limit = lobby.settings.numMovies;
@@ -60,6 +63,20 @@ export function PickingStage({ code, lobby, uid, canAct }: Props) {
   };
 
   const startVoting = () => setStage(code, "VOTING").catch(() => toast("Couldn't start voting. Try again.", "error"));
+
+  // Skip the vote: everyone's picks go in the hat and one comes out.
+  const goRandom = async () => {
+    if (!enoughMovies) return;
+    setPickingRandom(true);
+    const entry = pickRandom(pool);
+    try {
+      await pickAtRandom(code, { movieId: entry.movie.id, pickedBy: entry.pickedBy[0]! });
+    } catch {
+      // Most likely that movie was just removed; the pool has updated, so trying again works.
+      toast("Couldn't pick a movie. Try again.", "error");
+      setPickingRandom(false);
+    }
+  };
 
   return (
     <>
@@ -118,15 +135,56 @@ export function PickingStage({ code, lobby, uid, canAct }: Props) {
         }
       />
 
+      <Dialog
+        open={confirmRandom}
+        onClose={() => {
+          if (!pickingRandom) setConfirmRandom(false);
+        }}
+        title="Skip the vote?"
+      >
+        <p className="muted">
+          {enoughMovies
+            ? `We'll pick one of the group's ${pool.length} movies at random, and everyone will watch it land.`
+            : `The group needs at least ${MIN_MOVIES_TO_VOTE} movies to pick from.`}
+        </p>
+        <div className="invite-actions">
+          <button type="button" className="btn" onClick={() => setConfirmRandom(false)} disabled={pickingRandom}>
+            Keep picking
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={goRandom}
+            disabled={pickingRandom || !enoughMovies}
+          >
+            <Dices size={18} /> {pickingRandom ? "Picking…" : "Pick at random"}
+          </button>
+        </div>
+      </Dialog>
+
       <ActionBar>
         <div className="action-bar-status">
           <PicksTray picks={myPicks} limit={limit} onRemove={(id) => toggle({ ...myPicks[id]!, id })} />
         </div>
         {isHost ? (
-          <button type="button" className="btn btn-primary" onClick={startVoting} disabled={!enoughMovies}>
-            {enoughMovies ? (everyoneDone ? "Everyone's in! Vote" : "Start voting") : `Need ${MIN_MOVIES_TO_VOTE}+ movies`}
-            {enoughMovies && <ChevronRight size={18} />}
-          </button>
+          <div className="action-bar-buttons">
+            {enoughMovies && (
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setConfirmRandom(true)}
+                aria-label="Pick at random"
+                title="Skip the vote and pick at random"
+              >
+                <Dices size={18} />
+                <span className="hide-narrow">Random</span>
+              </button>
+            )}
+            <button type="button" className="btn btn-primary" onClick={startVoting} disabled={!enoughMovies}>
+              {enoughMovies ? (everyoneDone ? "Everyone's in! Vote" : "Start voting") : `Need ${MIN_MOVIES_TO_VOTE}+ movies`}
+              {enoughMovies && <ChevronRight size={18} />}
+            </button>
+          </div>
         ) : (
           <span className="muted small" style={{ textAlign: "right" }}>
             The host starts the vote

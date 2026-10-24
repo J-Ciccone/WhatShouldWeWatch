@@ -58,8 +58,16 @@ export function winners(lobby: Pick<Lobby, "picks" | "votes">): TallyEntry[] {
   return results.filter((r) => r.votes === top);
 }
 
-/** Winners after applying the host's tie-break, if they made one. */
-export function finalWinners(lobby: Pick<Lobby, "picks" | "votes" | "tiebreak">): TallyEntry[] {
+/** The movie the host picked at random, if the vote was skipped and it's in the pool. */
+export function randomWinner(lobby: Pick<Lobby, "picks" | "votes" | "randomPick">): TallyEntry | undefined {
+  const id = lobby.randomPick?.movieId;
+  return id ? tally(lobby).find((t) => t.movie.id === id) : undefined;
+}
+
+/** Winners after applying the host's random pick or tie-break, if they made one. */
+export function finalWinners(lobby: Pick<Lobby, "picks" | "votes" | "tiebreak" | "randomPick">): TallyEntry[] {
+  const chosen = randomWinner(lobby);
+  if (chosen) return [chosen];
   const top = winners(lobby);
   if (top.length > 1 && lobby.tiebreak) {
     const chosen = top.find((t) => t.movie.id === lobby.tiebreak);

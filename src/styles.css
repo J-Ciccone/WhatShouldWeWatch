@@ -1398,6 +1398,18 @@ button.player:hover {
   border-color: transparent;
 }
 
+.action-bar-buttons {
+  flex: none;
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 520px) {
+  .hide-narrow {
+    display: none;
+  }
+}
+
 .tray-count {
   flex: none;
   font-weight: 700;

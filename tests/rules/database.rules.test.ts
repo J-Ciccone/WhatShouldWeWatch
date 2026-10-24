@@ -146,6 +146,55 @@ describe("joining", () => {
   });
 });
 
+describe("random pick (skipping the vote)", () => {
+  const lobbyRef = (uid: string) => db(uid).ref(`lobbies/${CODE}`);
+  const settings = { numMovies: 2, unlimitedVotes: false };
+  const picks = { [GUEST]: { "348": { title: "Alien" } }, [HOST]: { "603": { title: "The Matrix" } } };
+  const seedPicking = () => seed("PICKING", settings, { picks });
+  const alien = { movieId: "348", pickedBy: GUEST };
+
+  it("lets the host end picking with a random pick in one write", async () => {
+    await seedPicking();
+    await assertSucceeds(lobbyRef(HOST).update({ stage: "DONE", randomPick: alien }));
+  });
+
+  it("rejects ending picking without a pick, or setting a pick without ending picking", async () => {
+    await seedPicking();
+    await assertFails(at(HOST, "stage").set("DONE"));
+    await assertFails(at(HOST, "randomPick").set(alien));
+  });
+
+  it("rejects a movie that isn't (or is no longer) in that player's picks", async () => {
+    // Regression: a pick removed just before the host confirmed left the round stuck on "Nobody voted!".
+    await seedPicking();
+    await assertFails(lobbyRef(HOST).update({ stage: "DONE", randomPick: { movieId: "348", pickedBy: HOST } }));
+    await assertFails(lobbyRef(HOST).update({ stage: "DONE", randomPick: { movieId: "999", pickedBy: GUEST } }));
+    await assertSucceeds(at(GUEST, `picks/${GUEST}/348`).remove());
+    await assertFails(lobbyRef(HOST).update({ stage: "DONE", randomPick: alien }));
+  });
+
+  it("rejects guests, malformed values, and random picks after voting started", async () => {
+    await seedPicking();
+    await assertFails(lobbyRef(GUEST).update({ stage: "DONE", randomPick: alien }));
+    await assertFails(lobbyRef(HOST).update({ stage: "DONE", randomPick: "348" }));
+    await assertFails(lobbyRef(HOST).update({ stage: "DONE", randomPick: { ...alien, extra: 1 } }));
+    await assertFails(lobbyRef(HOST).update({ stage: "DONE", randomPick: { movieId: "348", pickedBy: `${GUEST}/x` } }));
+    await seed("VOTING", settings, { picks });
+    await assertFails(lobbyRef(HOST).update({ stage: "DONE", randomPick: alien }));
+  });
+
+  it("can't be changed once made, or included when creating a lobby", async () => {
+    await seedPicking();
+    await assertSucceeds(lobbyRef(HOST).update({ stage: "DONE", randomPick: alien }));
+    await assertFails(at(HOST, "randomPick").set({ movieId: "603", pickedBy: HOST }));
+    await assertFails(at(HOST, "randomPick").remove());
+    await assertFails(at(GUEST, `votes/${GUEST}`).set("603"));
+
+    await env.clearDatabase();
+    await assertFails(db(HOST).ref(`lobbies/${CODE}`).set(newLobby(HOST, { randomPick: alien })));
+  });
+});
+
 describe("tie-break and next round", () => {
   it("lets only the host set them, only after the vote, and only once", async () => {
     await seed("VOTING");

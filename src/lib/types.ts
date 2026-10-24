@@ -26,6 +26,11 @@ export interface MemberInfo {
   joinedAt: number;
 }
 
+export interface RandomPick {
+  movieId: string;
+  pickedBy: string;
+}
+
 /** A bare number is a join timestamp from before players had names. */
 export type MemberEntry = number | MemberInfo;
 
@@ -44,6 +49,11 @@ export interface Lobby {
   votes?: Record<string, string | Record<string, true>>;
   /** Set by the host to settle a tie once the vote is over. */
   tiebreak?: string;
+  /**
+   * Set by the host to skip voting: the movie picked at random, and whose pick it
+   * was (so the rules can check it was still in the pool when chosen).
+   */
+  randomPick?: RandomPick;
   /** Code of the follow-up lobby when the host starts another round. */
   nextLobby?: string;
 }

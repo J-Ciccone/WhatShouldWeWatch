@@ -75,6 +75,29 @@ describe("ResultsStage", () => {
     expect(screen.getByRole("heading", { name: "Alien" })).toBeInTheDocument();
   });
 
+  it("shows a random pick as the winner, without vote counts", () => {
+    view(lobby({ randomPick: { movieId: "603", pickedBy: "me" } }));
+    expect(screen.getByText(/Picked at random/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "The Matrix" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Nobody voted!" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Vote results" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/0 votes/)).not.toBeInTheDocument();
+  });
+
+  it("plays the shuffle for people who were there when the host picked at random", () => {
+    vi.useFakeTimers();
+    renderWithApp(<ResultsStage code="ABC234" lobby={lobby({ randomPick: { movieId: "348", pickedBy: "host" } })} uid="me" watchedLive />);
+    expect(screen.getByRole("heading", { name: "Picking at random…" })).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(5000));
+    expect(screen.getByRole("heading", { name: "Alien" })).toBeInTheDocument();
+  });
+
+  it("doesn't label a leftover movie as the random pick when the stored pick is missing", () => {
+    // The rules now prevent this, but older data could still hold such a pick.
+    view(lobby({ picks: { host: { "348": { title: "Alien" } } }, randomPick: { movieId: "603", pickedBy: "me" } }));
+    expect(screen.queryByText(/Picked at random/)).not.toBeInTheDocument();
+  });
+
   it("handles a vote nobody took part in", () => {
     view(lobby());
     expect(screen.getByRole("heading", { name: "Nobody voted!" })).toBeInTheDocument();

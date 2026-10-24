@@ -1,7 +1,15 @@
-import { get, onValue, ref, remove, serverTimestamp, set } from "firebase/database";
+import { get, onValue, ref, remove, serverTimestamp, set, update } from "firebase/database";
 import { db } from "../firebase/db";
 import { generateLobbyCode } from "../lib/lobbyCode";
-import { isLobby, type Lobby, type LobbySettings, type Movie, type Stage, type StoredMovie } from "../lib/types";
+import {
+  isLobby,
+  type Lobby,
+  type LobbySettings,
+  type Movie,
+  type RandomPick,
+  type Stage,
+  type StoredMovie,
+} from "../lib/types";
 
 const lobbyPath = (code: string) => `lobbies/${code}`;
 
@@ -64,6 +72,16 @@ export function setSingleVote(code: string, uid: string, movieId: string | null)
 export function setMultiVote(code: string, uid: string, movieId: string, voted: boolean) {
   const voteRef = ref(db, `${lobbyPath(code)}/votes/${uid}/${movieId}`);
   return voted ? set(voteRef, true) : remove(voteRef);
+}
+
+/**
+ * Host only, while picking: skips the vote and ends the round with a movie
+ * chosen at random. Both fields are written together so nobody ever sees a
+ * finished round without its pick. The rules reject the write if that pick was
+ * removed in the meantime, so the caller can retry with the current pool.
+ */
+export function pickAtRandom(code: string, pick: RandomPick) {
+  return update(ref(db, lobbyPath(code)), { stage: "DONE" satisfies Stage, randomPick: pick });
 }
 
 /** Host only, after the vote: settles a tie for everyone. Can only be set once. */

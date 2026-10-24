@@ -38,6 +38,10 @@ function LobbyView({ code }: { code: string }) {
   const joinRequested = useRef(false);
 
   const lobby = state.status === "ready" ? state.lobby : null;
+  // Remember whether this viewer saw the round in progress, so the results can
+  // play their reveal animation live but not on a later reload.
+  const [watchedLive, setWatchedLive] = useState(false);
+  if (lobby && lobby.stage !== "DONE" && !watchedLive) setWatchedLive(true);
   const me = lobby?.members?.[uid];
   const isMember = me !== undefined && me !== null;
   // Anyone opening the link joins automatically, unless the vote is already over.
@@ -149,7 +153,7 @@ function LobbyView({ code }: { code: string }) {
 
       {current.stage === "PICKING" && <PickingStage code={code} lobby={current} uid={uid} canAct={isMember} />}
       {current.stage === "VOTING" && <VotingStage code={code} lobby={current} uid={uid} canAct={isMember} />}
-      {current.stage === "DONE" && <ResultsStage code={code} lobby={current} uid={uid} />}
+      {current.stage === "DONE" && <ResultsStage code={code} lobby={current} uid={uid} watchedLive={watchedLive} />}
 
       <InviteDialog code={code} open={inviteOpen} onClose={() => setInviteOpen(false)} />
 

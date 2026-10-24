@@ -85,6 +85,31 @@ describe("client write paths", () => {
     expect((await read(next)).stage).toBe("PICKING");
   });
 
+  it("skips the vote with a random pick", async () => {
+    const host = await newUser();
+    const code = await lobby.createLobby(host.uid, settings, "Host");
+    await lobby.addPick(code, host.uid, ALIEN);
+    await lobby.addPick(code, host.uid, MATRIX);
+
+    const guest = await newUser();
+    await lobby.joinLobby(code, guest.uid, "Guest");
+    await lobby.addPick(code, guest.uid, { id: "949", title: "Heat" });
+    const matrix = { movieId: "603", pickedBy: host.uid };
+    await expect(lobby.pickAtRandom(code, matrix)).rejects.toThrow();
+
+    // The guest takes Heat back just before the host's random pick lands on it.
+    await lobby.removePick(code, guest.uid, "949");
+    await actAs(host);
+    await expect(lobby.pickAtRandom(code, { movieId: "949", pickedBy: guest.uid })).rejects.toThrow();
+    expect((await read(code)).stage).toBe("PICKING");
+
+    await lobby.pickAtRandom(code, matrix);
+    const done = await read(code);
+    expect(done.stage).toBe("DONE");
+    expect(done.randomPick).toEqual(matrix);
+    await expect(lobby.pickAtRandom(code, { movieId: "348", pickedBy: host.uid })).rejects.toThrow();
+  });
+
   it("records votes in the unlimited shape", async () => {
     const host = await newUser();
     const code = await lobby.createLobby(host.uid, { numMovies: 2, unlimitedVotes: true }, "Host");
